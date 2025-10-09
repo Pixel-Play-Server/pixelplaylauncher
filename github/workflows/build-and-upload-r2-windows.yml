@@ -1,0 +1,115 @@
+name: Build and Upload to R2 (Windows)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  build-and-upload:
+    runs-on: windows-latest
+    env:
+      STABLE_BUCKET: pixelplay
+      BETA_BUCKET: pixellauncher
+      STABLE_ENDPOINT: https://3e2952346f3e901e55bcbc7e074595f4.r2.cloudflarestorage.com/pixelplay
+      BETA_ENDPOINT: https://3e2952346f3e901e55bcbc7e074595f4.r2.cloudflarestorage.com/pixellauncher
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build frontend
+        run: yarn build
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0.5.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_GH_PAT }}
+        with:
+          packageManager: yarn
+          args: --release
+          distPath: dist
+
+      - name: Package artifacts
+        run: |
+          mkdir -p ci-artifacts
+          cp -r src-tauri/target/release/bundle/msi/* ci-artifacts/
+
+      - name: Set upload variables
+        id: setvars
+        run: |
+          if ("${{ github.ref_name }}" -eq "main") {
+            echo "bucket=${{ env.STABLE_BUCKET }}" >> $env:GITHUB_OUTPUT
+            echo "endpoint=${{ env.STABLE_ENDPOINT }}" >> $env:GITHUB_OUTPUT
+            echo "type=stable" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "bucket=${{ env.BETA_BUCKET }}" >> $env:GITHUB_OUTPUT
+            echo "endpoint=${{ env.BETA_ENDPOINT }}" >> $env:GITHUB_OUTPUT
+            echo "type=beta" >> $env:GITHUB_OUTPUT
+          }
+        shell: pwsh
+
+      - name: Install AWS CLI
+        run: |
+          pip3 install --user --upgrade pip
+          pip3 install --user awscli
+
+      - name: Remove previous builds for this arch/os
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ steps.setvars.outputs.endpoint }}
+          R2_BUCKET: ${{ steps.setvars.outputs.bucket }}
+        run: |
+          $OS_NAME="windows-x86_64"
+          $VERSION = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          aws --endpoint-url "$env:R2_ENDPOINT" s3 rm "s3://$env:R2_BUCKET/releases-v2/$OS_NAME/$VERSION/" --recursive
+        shell: pwsh
+
+      - name: Upload artifacts to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ steps.setvars.outputs.endpoint }}
+          R2_BUCKET: ${{ steps.setvars.outputs.bucket }}
+        run: |
+          $OS_NAME="windows-x86_64"
+          $VERSION = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          aws --endpoint-url "$env:R2_ENDPOINT" s3 sync ci-artifacts/ "s3://$env:R2_BUCKET/releases-v2/$OS_NAME/$VERSION/" --exact-timestamps
+        shell: pwsh
+
+      - name: Generate and upload version JSON
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ steps.setvars.outputs.endpoint }}
+          R2_BUCKET: ${{ steps.setvars.outputs.bucket }}
+          TYPE: ${{ steps.setvars.outputs.type }}
+        run: |
+          $OS_NAME="windows-x86_64"
+          $VERSION = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          $BUILD_NAME="pixelplay-launcher"
+          $FORMAT="msi"
+          $TIMESTAMP = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          $content = @{
+            version = $VERSION
+            name = $BUILD_NAME
+            format = $FORMAT
+            os = $OS_NAME
+            timestamp = $TIMESTAMP
+            type = $env:TYPE
+          } | ConvertTo-Json
+          Set-Content -Path version.json -Value $content
+          aws --endpoint-url "$env:R2_ENDPOINT" s3 cp version.json "s3://$env:R2_BUCKET/releases-v2/$OS_NAME/$VERSION/version.json"
+        shell: pwsh
