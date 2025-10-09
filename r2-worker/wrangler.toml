@@ -1,0 +1,9 @@
+name = "pixelplay-updater-proxy"
+main = "./worker.js"
+compatibility_date = "2025-10-03"
+
+[vars]
+# none
+
+[r2_buckets]
+bindings = [ { binding = "UPDATER_BUCKET", bucket = "<your-bucket-name>" } ]

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Launcher News</title>
+    <style>
+      :root{
+        --muted: rgba(230,238,246,0.7);
+        --text: rgba(230,238,246,0.95);
+        --accent: #2ecc71;
+        --accent2: #2752c1;
+        --glass: rgba(255,255,255,0.06);
+        --glass-strong: rgba(255,255,255,0.09);
+      }
+
+      /* Make the page transparent so the launcher background shows through the iframe */
+      html,body{height:100%;margin:0;background:transparent;color:var(--text);font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial}
+
+      /* Centered container that adapts to smaller screens */
+      .wrap{max-width:1000px;margin:24px auto;padding:18px;box-sizing:border-box}
+
+      header{display:flex;align-items:center;gap:12px}
+      .brand{display:flex;align-items:center;gap:12px}
+      .brand img{width:48px;height:48px;border-radius:10px;background:transparent}
+      h1{margin:0;font-size:20px;letter-spacing:0.6px}
+      .sub{color:var(--muted);font-size:13px}
+
+      /* Posts list with translucent cards and backdrop blur so underlying background is visible */
+      .posts{margin-top:16px;display:flex;flex-direction:column;gap:14px}
+      .post{background:var(--glass);border:1px solid rgba(255,255,255,0.04);padding:14px;border-radius:12px;backdrop-filter:blur(8px) saturate(120%)}
+      .post h2{margin:0 0 8px 0;font-size:16px}
+      .meta{font-size:12px;color:var(--muted);margin-bottom:8px}
+
+      /* Call-to-action using local logo as icon */
+      .cta{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#02110b;font-weight:700;text-decoration:none}
+      .cta img{width:18px;height:18px}
+
+      .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:18px}
+      .feature{background:var(--glass-strong);padding:12px;border-radius:10px;backdrop-filter:blur(6px)}
+
+      footer{margin-top:18px;color:var(--muted);font-size:12px}
+
+      /* Small decorative icon next to headings */
+      .lead-icon{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03)}
+      .lead-icon img{width:28px;height:28px}
+
+      /* Responsive text sizes */
+      @media (max-width:640px){
+        .wrap{margin:12px;padding:12px}
+        h1{font-size:18px}
+        .brand img{width:40px;height:40px}
+      }
+    </style>
+  </head>
+  <body>
+  <div class="wrap" role="main" style="background:transparent">
+      <header>
+        <div class="brand">
+          <!-- Use the launcher icon provided by the user -->
+          <img src="/Square512x512Logo.png" alt="logo" loading="lazy" onerror="this.onerror=null;this.src='/pixelplay_logo_color.png'" />
+        </div>
+        <div>
+          <h1>Launcher News</h1>
+          <div class="sub">Updates, features and changelogs — packaged static news (transparent)</div>
+        </div>
+      </header>
+
+      <div class="posts">
+        <article class="post">
+          <div class="meta">Oct 6, 2025 — Nota</div>
+          <h2><span class="lead-icon" aria-hidden="true"><img src="/#Square512x512Logo.png" alt="icon" onerror="this.onerror=null;this.src='/pixelplay_logo_color.png'"/></span> El original fue descontinuado — ¿qué significa?</h2>
+          <p>El proyecto original fue descontinuado, pero esto no obliga a nadie a migrar. La versión 4.0 es una evolución voluntaria: no es obligatoria, y viene pensada para ofrecer mejor optimización y mayor apertura a integraciones de terceros.</p>
+        </article>
+
+        <article class="post">
+          <div class="meta">Oct 6, 2025 — Avance</div>
+          <h2><span class="lead-icon" aria-hidden="true"><img src="/#Square512x512Logo.png" alt="icon" onerror="this.onerror=null;this.src='/pixelplay_logo_color.png'"/></span> Lanzamiento 4.0 — Más rápido y más abierto</h2>
+          <p>La versión 4.0 se centra en optimización: arranques más rápidos, descargas más fiables y un enfoque más modular y abierto para desarrolladores. Es una mejora opcional para quien quiera beneficiarse de las novedades.</p>
+        </article>
+      </div>
+
+      <section class="features" aria-label="features">
+        <div class="feature">
+          <strong>Customizable backgrounds</strong>
+          <p class="sub">Pick animated or static backgrounds — including OG and retro modes.</p>
+        </div>
+        <div class="feature">
+          <strong>Fast updates</strong>
+          <p class="sub">Delta updates and resumable downloads make patching faster and safer.</p>
+        </div>
+        <div class="feature">
+          <strong>Privacy</strong>
+          <p class="sub">We respect your privacy and only store what is necessary to sync settings.</p>
+        </div>
+      </section>
+
+      <footer>
+        This is a static demo you can host on GitHub Pages. The page is intentionally translucent so it adapts to the launcher's background when embedded in an iframe.
+      </footer>
+    </div>
+  </body>
+</html>
