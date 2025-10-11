@@ -31,6 +31,8 @@ node_modules
 .env
 .env.*
 !.env.example
+secrets.env
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .idea
+act.exe

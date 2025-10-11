@@ -33,12 +33,11 @@ jobs:
         run: yarn build
 
       - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
+        run: |
+          npx tauri build
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_GH_PAT }}
-        with:
-          args: '-- --release'
-          distPath: dist
+          PERSONAL_GH_PAT: ${{ secrets.PERSONAL_GH_PAT }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
 
       - name: Package artifacts
         run: |
@@ -98,14 +97,5 @@ jobs:
           BUILD_NAME="pixelplay-launcher"
           FORMAT="zip"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          cat > version.json <<EOF
-{
-  "version": "$VERSION",
-  "name": "$BUILD_NAME",
-  "format": "$FORMAT",
-  "os": "$OS_NAME",
-  "timestamp": "$TIMESTAMP",
-  "type": "$TYPE"
-}
-EOF
+          echo "{\"version\": \"$VERSION\", \"name\": \"$BUILD_NAME\", \"format\": \"$FORMAT\", \"os\": \"$OS_NAME\", \"timestamp\": \"$TIMESTAMP\", \"type\": \"$TYPE\"}" > version.json
           aws --endpoint-url "$R2_ENDPOINT" s3 cp version.json s3://$R2_BUCKET/releases-v2/${OS_NAME}/$VERSION/version.json
