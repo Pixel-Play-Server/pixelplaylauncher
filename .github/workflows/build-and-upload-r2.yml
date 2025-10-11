@@ -1,4 +1,4 @@
-name: Build and Upload to R2 (Linux)
+name: Build and Upload to R2 (Stable/Beta)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-upload:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     env:
       STABLE_BUCKET: pixelplay
       BETA_BUCKET: pixellauncher
@@ -21,34 +21,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Install system deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf build-essential
-
-      - name: Install frontend dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build frontend
-        run: yarn build
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_GH_PAT }}
         with:
+          packageManager: yarn
           args: '-- --release'
-          distPath: dist
 
       - name: Package artifacts
         run: |
           mkdir -p ci-artifacts
-          cp -r src-tauri/target/release/bundle/appimage/* ci-artifacts/
+          cp -r src-tauri/target/release/bundle/* ci-artifacts/ || true
 
       - name: Set upload variables
         id: setvars
@@ -75,7 +64,15 @@ jobs:
           R2_ENDPOINT: ${{ steps.setvars.outputs.endpoint }}
           R2_BUCKET: ${{ steps.setvars.outputs.bucket }}
         run: |
-          OS_NAME="linux-x86_64"
+          # Detect OS/arch and version
+          OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]')
+          if [[ "$OS_NAME" == "darwin" ]]; then
+            if [[ $(uname -m) == "arm64" ]]; then
+              OS_NAME="mac-arm"
+            else
+              OS_NAME="mac-intel"
+            fi
+          fi
           VERSION=$(grep 'version' src-tauri/tauri.conf.json | head -1 | cut -d '"' -f4)
           aws --endpoint-url "$R2_ENDPOINT" s3 rm s3://$R2_BUCKET/releases-v2/${OS_NAME}/$VERSION/ --recursive || true
 
@@ -86,7 +83,14 @@ jobs:
           R2_ENDPOINT: ${{ steps.setvars.outputs.endpoint }}
           R2_BUCKET: ${{ steps.setvars.outputs.bucket }}
         run: |
-          OS_NAME="linux-x86_64"
+          OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]')
+          if [[ "$OS_NAME" == "darwin" ]]; then
+            if [[ $(uname -m) == "arm64" ]]; then
+              OS_NAME="mac-arm"
+            else
+              OS_NAME="mac-intel"
+            fi
+          fi
           VERSION=$(grep 'version' src-tauri/tauri.conf.json | head -1 | cut -d '"' -f4)
           aws --endpoint-url "$R2_ENDPOINT" s3 sync ci-artifacts/ s3://$R2_BUCKET/releases-v2/${OS_NAME}/$VERSION/ --exact-timestamps
 
@@ -98,10 +102,17 @@ jobs:
           R2_BUCKET: ${{ steps.setvars.outputs.bucket }}
           TYPE: ${{ steps.setvars.outputs.type }}
         run: |
-          OS_NAME="linux-x86_64"
+          OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]')
+          if [[ "$OS_NAME" == "darwin" ]]; then
+            if [[ $(uname -m) == "arm64" ]]; then
+              OS_NAME="mac-arm"
+            else
+              OS_NAME="mac-intel"
+            fi
+          fi
           VERSION=$(grep 'version' src-tauri/tauri.conf.json | head -1 | cut -d '"' -f4)
           BUILD_NAME="pixelplay-launcher"
-          FORMAT="AppImage"
+          FORMAT="zip"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           cat > version.json <<EOF
 {
