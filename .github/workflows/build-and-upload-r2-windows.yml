@@ -42,7 +42,7 @@ jobs:
       - name: Package artifacts
         run: |
           mkdir -p ci-artifacts
-          cp -r src-tauri/target/release/bundle/msi/* ci-artifacts/
+          cp -r src-tauri/target/release/bundle/nsis/* ci-artifacts/
 
       - name: Set upload variables
         id: setvars
@@ -102,7 +102,7 @@ jobs:
           $OS_NAME="windows-x86_64"
           $VERSION = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
           $BUILD_NAME="pixelplay-launcher"
-          $FORMAT="msi"
+          $FORMAT="nsis"
           $TIMESTAMP = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
           $content = @{
             version = $VERSION
