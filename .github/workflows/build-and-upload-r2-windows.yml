@@ -73,6 +73,10 @@ jobs:
           $OS_NAME="windows-x86_64"
           $VERSION = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
           aws --endpoint-url "$env:R2_ENDPOINT" s3 rm "s3://$env:R2_BUCKET/releases-v2/$OS_NAME/$VERSION/" --recursive
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "No previous builds found or unable to remove. Continuing..."
+          }
+          exit 0
         shell: pwsh
 
       - name: Upload artifacts to R2
