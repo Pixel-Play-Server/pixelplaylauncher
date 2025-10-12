@@ -238,35 +238,43 @@ pub async fn check_for_updates(
     // 2. Runtime environment variable: PIXELPLAY_UPDATER_BASE_URL (useful for dev/testing)
     // 3. Default production/staging endpoints built into code below
 
-    // New R2 public bucket logic
-    // Format: https://pub-dda9306a363141bc9aece427638fbb4a.r2.dev/releases-v2/<channel>/<arch>/<version>/
-
-    // Use different R2 buckets for stable and beta
-    let (base_repo_url, channel_str) = if is_beta_channel {
-        (
-            option_env!("PIXELPLAY_UPDATER_BASE_URL_COMPILED")
-                .map(|s| s.to_string())
-                .or_else(|| std::env::var("PIXELPLAY_UPDATER_BASE_URL").ok())
-                .unwrap_or_else(|| "https://pub-fb468072650f40c9884e13b2bc758f60.r2.dev/releases-v2".to_string()),
-            "beta"
-        )
-    } else {
-        (
-            option_env!("PIXELPLAY_UPDATER_BASE_URL_COMPILED")
-                .map(|s| s.to_string())
-                .or_else(|| std::env::var("PIXELPLAY_UPDATER_BASE_URL").ok())
-                .unwrap_or_else(|| "https://pub-dda9306a363141bc9aece427638fbb4a.r2.dev/releases-v2".to_string()),
-            "stable"
-        )
+    // Determine base URL (compile-time override > runtime env > defaults per channel)
+    let base_repo_url = match option_env!("PIXELPLAY_UPDATER_BASE_URL_COMPILED") {
+        Some(compiled) => compiled.to_string(),
+        None => std::env::var("PIXELPLAY_UPDATER_BASE_URL").unwrap_or_else(|_| {
+            if is_beta_channel {
+                // Beta R2 endpoint including pixelplay path
+                "https://pub-fb468072650f40c9884e13b2bc758f60.r2.dev/pixelplay/releases-v2".to_string()
+            } else {
+                // Stable R2 endpoint including pixelplay path
+                "https://pub-dda9306a363141bc9aece427638fbb4a.r2.dev/pixelplay/releases-v2".to_string()
+            }
+        }),
     };
 
-    // arch and current_version will be replaced by Tauri
+    // Default target placeholder is handled by Tauri; allow override on Linux non-AppImage
+    let mut platform_specific_target = "{{target}}".to_string();
+
+    if cfg!(target_os = "linux") {
+        if std::env::var("APPIMAGE").is_ok() {
+            info!("Linux AppImage detected. Using default {{target}} placeholder.");
+        } else {
+            let deb_target_identifier = "debian";
+            info!(
+                "Linux non-AppImage detected. Using target: {}",
+                deb_target_identifier
+            );
+            platform_specific_target = deb_target_identifier.to_string();
+        }
+    }
+
+    // Build final URL: (endpoint)/pixelplay/releases-v2/(target)/{{current_version}}/version.json
     let update_url_str = format!(
-        "{}/{}/{{{{arch}}}}/{{{{current_version}}}}/",
-        base_repo_url, channel_str
+        "{}/{}/{{{{current_version}}}}/version.json",
+        base_repo_url, platform_specific_target
     );
 
-    info!("Using R2 update endpoint: {}", update_url_str);
+    info!("Using update endpoint template: {}", update_url_str);
 
     let update_url = match update_url_str.parse() {
         Ok(url) => url,

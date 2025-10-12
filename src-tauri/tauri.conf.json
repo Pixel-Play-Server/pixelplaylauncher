@@ -46,7 +46,9 @@
           "https://api.iconify.design",
           "https://*.modrinth.com",
           "https://sessionserver.mojang.com",
-          "https://*.pixelplay.gg"
+          "https://*.pixelplay.gg",
+          "https://pub-fb468072650f40c9884e13b2bc758f60.r2.dev",
+          "https://pub-dda9306a363141bc9aece427638fbb4a.r2.dev"
         ],
         "img-src": [
           "'self'",
