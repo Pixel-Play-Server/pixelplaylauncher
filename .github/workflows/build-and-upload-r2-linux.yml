@@ -58,6 +58,7 @@ jobs:
         env:
           PERSONAL_GH_PAT: ${{ secrets.PERSONAL_GH_PAT }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           APPIMAGE_EXTRACT_AND_RUN: "1"
           ARCH: x86_64
 
@@ -109,7 +110,14 @@ jobs:
         run: |
           OS_NAME="linux-x86_64"
           VERSION=$(grep 'version' src-tauri/tauri.conf.json | head -1 | cut -d '"' -f4)
-          aws --endpoint-url "$R2_ENDPOINT" s3 sync ci-artifacts/ s3://$R2_BUCKET/releases-v2/${OS_NAME}/$VERSION/ --exact-timestamps
+          # Upload all files from ci-artifacts directory
+          for file in ci-artifacts/*; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              echo "Uploading: $filename"
+              aws --endpoint-url "$R2_ENDPOINT" s3 cp "$file" "s3://$R2_BUCKET/releases-v2/${OS_NAME}/$VERSION/$filename"
+            fi
+          done
 
       - name: Generate and upload version JSON
         env:
