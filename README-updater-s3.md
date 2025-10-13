@@ -5,6 +5,11 @@ Resumen corto
 - Subiremos los artifacts al bucket bajo una estructura tipo: `pixelplay/releases-v2/<target>/<version>/`.
 - Expondremos el bucket mediante un Cloudflare Worker (o un dominio + CDN) para servir por HTTPS.
 - El launcher buscará el manifest exactamente en `(endpoint)/pixelplay/releases-v2/(target)/{{current_version}}/version.json`.
+   - Los valores de `(target)` esperados son:
+     - `windows-x86_64`
+     - `linux-x86_64`
+     - `mac-arm`
+     - `mac-intel`
 
 Pasos en términos sencillos
 1) Crear bucket en Cloudflare R2 y obtener:
