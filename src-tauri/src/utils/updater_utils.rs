@@ -252,21 +252,21 @@ pub async fn check_for_updates(
         }),
     };
 
-    // Default target placeholder is handled by Tauri; allow override on Linux non-AppImage
-    let mut platform_specific_target = "{{target}}".to_string();
-
-    if cfg!(target_os = "linux") {
-        if std::env::var("APPIMAGE").is_ok() {
-            info!("Linux AppImage detected. Using default {{target}} placeholder.");
-        } else {
-            let deb_target_identifier = "debian";
-            info!(
-                "Linux non-AppImage detected. Using target: {}",
-                deb_target_identifier
-            );
-            platform_specific_target = deb_target_identifier.to_string();
-        }
-    }
+    // Compute the required target label per platform/arch:
+    // windows-x86_64, linux-x86_64, mac-arm, mac-intel
+    let platform_specific_target = if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
+        "windows-x86_64"
+    } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+        "linux-x86_64"
+    } else if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        "mac-arm"
+    } else if cfg!(all(target_os = "macos", target_arch = "x86_64")) {
+        "mac-intel"
+    } else {
+        warn!("Unknown platform/arch for updater target; defaulting to 'unknown'.");
+        "unknown"
+    }.to_string();
+    info!("Updater target resolved to: {}", platform_specific_target);
 
     // Build final URL: (endpoint)/pixelplay/releases-v2/(target)/{{current_version}}/version.json
     let update_url_str = format!(
