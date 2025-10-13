@@ -14,6 +14,13 @@ PixelPlay Launcher is a modern Minecraft launcher forked from LiquidLauncher and
 - Installer builds for all major platforms
 
 ## Build Instructions
+[![Build and Upload to R2 (Windows)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-windows.yml/badge.svg)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-windows.yml)
+
+[![Build and Upload to R2 (macOS Intel)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-macos-intel.yml/badge.svg)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-macos-intel.yml)
+
+[![Build and Upload to R2 (macOS ARM)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-macos-arm.yml/badge.svg)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-macos-arm.yml)
+
+[![Build and Upload to R2 (Linux)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-linux.yml/badge.svg)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-linux.yml)
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18 or newer recommended)
