@@ -1,4 +1,4 @@
-# PixelPlay Launcher
+# Pixel Play Launcher
 
 PixelPlay Launcher is a modern Minecraft launcher forked from LiquidLauncher and NoRiskClient Launcher. This project is licensed under the GNU General Public License v3.0 (GPLv3).
 
