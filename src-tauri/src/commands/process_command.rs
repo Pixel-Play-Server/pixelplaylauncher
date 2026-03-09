@@ -115,9 +115,19 @@ pub async fn set_discord_state(
     profile_name: Option<String>,
 ) -> Result<(), CommandError> {
     let state = State::get().await?;
+    let has_running_game = state
+        .process_manager
+        .list_processes()
+        .await
+        .iter()
+        .any(|p| p.state == crate::state::process_state::ProcessState::Running);
+
     // Normalize the incoming state_type and map to internal DiscordState
     match state_type.to_lowercase().as_str() {
         "idle" | "inactivo" => {
+            if has_running_game {
+                return Ok(());
+            }
             if let Err(e) = state.discord_manager.set_state(crate::state::discord_state::DiscordState::Idle, true).await {
                 log::warn!("Failed to set Discord state to Idle: {}", e);
             }
@@ -132,7 +142,10 @@ pub async fn set_discord_state(
                 log::warn!("Failed to set Discord state to InGame: {}", e);
             }
         }
-        "modal" => {
+        "modal" | "launcher" => {
+            if has_running_game {
+                return Ok(());
+            }
             let modal = profile_name.unwrap_or_else(|| "unknown".to_string());
             if let Err(e) = state.discord_manager.set_state(crate::state::discord_state::DiscordState::Modal(modal), true).await {
                 log::warn!("Failed to set Discord state to Modal: {}", e);

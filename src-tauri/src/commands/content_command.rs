@@ -209,6 +209,23 @@ pub struct ToggleContentPayload {
     content_type: Option<profile_utils::ContentType>, // Added for targeted toggling
 }
 
+async fn is_launcher_pack_protected(
+    state_manager: &Arc<AppStateManager>,
+    profile_id: Uuid,
+) -> crate::error::Result<bool> {
+    let profile = state_manager.profile_manager.get_profile(profile_id).await?;
+    let Some(pack_id) = profile.selected_pixelplay_pack_id else {
+        return Ok(false);
+    };
+
+    let packs_config = state_manager.pixelplay_pack_manager.get_config().await;
+    Ok(packs_config
+        .packs
+        .get(&pack_id)
+        .map(|p| p.is_protected_by_author)
+        .unwrap_or(false))
+}
+
 /// Helper function to toggle a single asset file (shader, resourcepack, datapack)
 async fn toggle_single_asset_file(
     asset_path_str: &str,
@@ -301,6 +318,18 @@ pub async fn toggle_content_from_profile(
             e
         )))
     })?;
+
+    let is_protected = is_launcher_pack_protected(&state_manager, payload.profile_id).await?;
+    if is_protected
+        && matches!(
+            payload.content_type,
+            None | Some(profile_utils::ContentType::Mod) | Some(profile_utils::ContentType::pixelplayMod)
+        )
+    {
+        return Err(CommandError::from(AppError::Other(
+            "This launcher modpack is protected by the author. Mod changes are blocked.".to_string(),
+        )));
+    }
 
     // Handle pixelplay Pack item toggling if the identifier is provided
     if let Some(pixelplay_mod_identifier) = payload.pixelplay_mod_identifier {
@@ -648,6 +677,18 @@ pub async fn uninstall_content_from_profile(
         )))
     })?;
 
+    let is_protected = is_launcher_pack_protected(&state_manager, payload.profile_id).await?;
+    if is_protected
+        && matches!(
+            payload.content_type,
+            None | Some(profile_utils::ContentType::Mod) | Some(profile_utils::ContentType::pixelplayMod)
+        )
+    {
+        return Err(CommandError::from(AppError::Other(
+            "This launcher modpack is protected by the author. Mod removal is blocked.".to_string(),
+        )));
+    }
+
     if let Some(path_to_delete) = payload.file_path {
         log::info!(
             "Proceeding with uninstallation by file_path: {}",
@@ -748,6 +789,20 @@ pub async fn install_content_to_profile(
         payload.content_type,
         payload.source
     );
+
+    let state = crate::state::state_manager::State::get().await?;
+    let is_protected = is_launcher_pack_protected(&state, payload.profile_id).await?;
+    if is_protected
+        && matches!(
+            payload.content_type,
+            profile_utils::ContentType::Mod | profile_utils::ContentType::pixelplayMod
+        )
+    {
+        return Err(CommandError::from(AppError::Other(
+            "This launcher modpack is protected by the author. Installing mods is blocked."
+                .to_string(),
+        )));
+    }
 
     match payload.content_type {
         profile_utils::ContentType::Mod => {
@@ -853,6 +908,19 @@ pub async fn install_local_content_to_profile(
     );
 
     let state_manager = AppStateManager::get().await?;
+
+    let is_protected = is_launcher_pack_protected(&state_manager, payload.profile_id).await?;
+    if is_protected
+        && matches!(
+            payload.content_type,
+            profile_utils::ContentType::Mod | profile_utils::ContentType::pixelplayMod
+        )
+    {
+        return Err(CommandError::from(AppError::Other(
+            "This launcher modpack is protected by the author. Installing local mods is blocked."
+                .to_string(),
+        )));
+    }
 
     match payload.content_type {
         profile_utils::ContentType::Mod => {

@@ -792,6 +792,7 @@ pub async fn import_mrpack_as_profile(
                 version_id,
             },
             file_hash: None, // Could be added later if needed
+            is_protected_by_author: false,
         };
 
         profile.modpack_info = Some(modpack_info);

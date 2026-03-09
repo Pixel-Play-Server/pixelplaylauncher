@@ -29,6 +29,39 @@ impl NeoForgeInstaller {
         self
     }
 
+    fn normalize_requested_version(requested: &str) -> String {
+        requested
+            .trim()
+            .trim_end_matches(" (stable)")
+            .trim_end_matches(" (latest)")
+            .trim_start_matches("neoforge-")
+            .to_string()
+    }
+
+    fn resolve_compatible_version(compatible_versions: &[String], requested: Option<&str>) -> String {
+        if let Some(req) = requested {
+            let normalized = Self::normalize_requested_version(req);
+            if !normalized.is_empty() {
+                if let Some(exact) = compatible_versions.iter().find(|v| *v == &normalized) {
+                    return exact.clone();
+                }
+
+                // Allow matching by suffix when users provide a shortened token.
+                if let Some(suffix_match) = compatible_versions
+                    .iter()
+                    .find(|v| v.ends_with(&normalized))
+                {
+                    return suffix_match.clone();
+                }
+            }
+        }
+
+        compatible_versions
+            .first()
+            .cloned()
+            .unwrap_or_default()
+    }
+
     pub async fn install(
         &self,
         version_id: &str,
@@ -71,35 +104,8 @@ impl NeoForgeInstaller {
         }
 
         // --- Determine NeoForge Version ---
-        let target_neoforge_version = match &profile.loader_version {
-            Some(specific_version_str) if !specific_version_str.is_empty() => {
-                info!(
-                    "Attempting to find specific NeoForge version: {}",
-                    specific_version_str
-                );
-
-                // Check if the specific version exists in the compatible list
-                if compatible_versions.contains(specific_version_str) {
-                    info!("Found specified NeoForge version: {}", specific_version_str);
-                    specific_version_str.clone() // Clone the string to own it
-                } else {
-                    log::warn!(
-                        "Specified NeoForge version '{}' not found or incompatible with MC {}. Falling back to latest.",
-                        specific_version_str, version_id
-                    );
-                    // Fallback to the latest compatible version (first in the list from get_versions_for_minecraft)
-                    compatible_versions.first().unwrap().clone() // Unsafe unwrap okay due to is_empty check above
-                }
-            }
-            _ => {
-                // Fallback to latest compatible if no specific version is set
-                info!(
-                    "No specific NeoForge version set in profile, using latest for MC {}.",
-                    version_id
-                );
-                compatible_versions.first().unwrap().clone() // Unsafe unwrap okay due to is_empty check above
-            }
-        };
+        let target_neoforge_version =
+            Self::resolve_compatible_version(&compatible_versions, profile.loader_version.as_deref());
         // --- End Determine NeoForge Version ---
 
         info!("Using NeoForge version: {}", target_neoforge_version);

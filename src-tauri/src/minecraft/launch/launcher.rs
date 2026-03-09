@@ -219,7 +219,12 @@ impl MinecraftLauncher {
 
         // 2. Java-Befehl initialisieren (mit wrapper support)
         let launcher_config = state.config_manager.get_config().await;
-        let mut command = match launcher_config.hooks.wrapper {
+        let profile_wrapper = profile
+            .as_ref()
+            .and_then(|p| p.settings.hooks.wrapper.clone());
+        let effective_wrapper = profile_wrapper.or(launcher_config.hooks.wrapper.clone());
+
+        let mut command = match effective_wrapper {
             Some(wrapper) => {
                 info!("Using wrapper command: {}", wrapper);
                 // Exactly like Modrinth: use the whole wrapper string as command and add java path as arg
@@ -455,18 +460,20 @@ impl MinecraftLauncher {
         // Extract optional profile information for process metadata
         let (profile_loader, profile_loader_version, profile_pixelplay_pack, profile_name) =
             match profile {
-                Some(p) => (
+                Some(ref p) => (
                     Some(p.loader.as_str().to_string()),
-                    p.loader_version,
-                    p.selected_pixelplay_pack_id,
-                    Some(p.name),
+                    p.loader_version.clone(),
+                    p.selected_pixelplay_pack_id.clone(),
+                    Some(p.name.clone()),
                 ),
                 None => (None, None, None, None),
             };
 
-        // Get post-exit hook from config at launch time (not at exit time)
-        let launcher_config = state.config_manager.get_config().await;
-        let post_exit_hook = launcher_config.hooks.post_exit.clone();
+        // Resolve post-exit hook at launch time (profile hook overrides global hook)
+        let post_exit_hook = profile
+            .as_ref()
+            .and_then(|p| p.settings.hooks.post_exit.clone())
+            .or(launcher_config.hooks.post_exit.clone());
 
         // Start the process using ProcessManager with additional metadata
         process_manager

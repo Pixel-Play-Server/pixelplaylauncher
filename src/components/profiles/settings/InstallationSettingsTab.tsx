@@ -30,6 +30,23 @@ export function InstallationSettingsTab({
   updateProfile,
   refreshTrigger,
 }: InstallationSettingsTabProps) {
+  const formatInvokeError = (err: unknown): string => {
+    if (err instanceof Error) return err.message;
+    if (typeof err === "string") return err;
+    if (err && typeof err === "object") {
+      const maybe = err as { message?: unknown; error?: unknown; details?: unknown };
+      if (typeof maybe.message === "string") return maybe.message;
+      if (typeof maybe.error === "string") return maybe.error;
+      if (typeof maybe.details === "string") return maybe.details;
+      try {
+        return JSON.stringify(err);
+      } catch {
+        return String(err);
+      }
+    }
+    return String(err);
+  };
+
   const [selectedVersionType, setSelectedVersionType] =
     useState<VersionType>("release");
   const [minecraftVersions, setMinecraftVersions] = useState<
@@ -134,7 +151,7 @@ export function InstallationSettingsTab({
       } catch (err) {
         console.error("Failed to fetch Minecraft versions:", err);
         setError(
-          `failed to fetch minecraft versions: ${err instanceof Error ? err.message : String(err)}`,
+          `failed to fetch minecraft versions: ${formatInvokeError(err)}`,
         );
       } finally {
         setIsLoadingVersions(false);
@@ -208,7 +225,7 @@ export function InstallationSettingsTab({
       } catch (err) {
         console.error(`Failed to fetch ${editedProfile.loader} versions:`, err);
         setError(
-          `failed to fetch ${editedProfile.loader} versions: ${err instanceof Error ? err.message : String(err)}`,
+          `failed to fetch ${editedProfile.loader} versions: ${formatInvokeError(err)}`,
         );
       } finally {
         setIsLoadingLoaderVersions(false);

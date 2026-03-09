@@ -23,6 +23,7 @@ use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 use tokio::time::{interval, Duration};
 use uuid::Uuid;
+use crate::state::discord_state::DiscordState;
 
 // NEUE Imports für notify
 use notify::{
@@ -634,6 +635,40 @@ impl ProcessManager {
                     process_id
                 );
                 state.discord_manager.notify_game_start(process_id).await;
+
+                let profile_label = metadata
+                    .profile_name
+                    .clone()
+                    .unwrap_or_else(|| "Minecraft".to_string());
+                let mut version_parts: Vec<String> = Vec::new();
+                if let Some(mc) = metadata.minecraft_version.clone() {
+                    version_parts.push(format!("MC {}", mc));
+                }
+                if let Some(loader) = metadata.modloader.clone() {
+                    if let Some(loader_ver) = metadata.modloader_version.clone() {
+                        version_parts.push(format!("{} {}", loader, loader_ver));
+                    } else {
+                        version_parts.push(loader);
+                    }
+                }
+                let version_label = if version_parts.is_empty() {
+                    None
+                } else {
+                    Some(version_parts.join(" · "))
+                };
+                if let Err(e) = state
+                    .discord_manager
+                    .set_state(
+                        DiscordState::InGame {
+                            profile: profile_label,
+                            version: version_label,
+                        },
+                        true,
+                    )
+                    .await
+                {
+                    log::warn!("Failed to set Discord InGame state: {}", e);
+                }
             }
             Err(e) => {
                 log::error!("Failed to get global state to update Discord timestamp for process {}: {}. Discord state might be incorrect.", process_id, e);
@@ -858,6 +893,22 @@ impl ProcessManager {
                     &removed_process_metadata,
                 )
                 .await;
+
+                let has_running_processes = {
+                    let processes_reader = processes_arc_clone.read().await;
+                    processes_reader
+                        .values()
+                        .any(|p| p.metadata.state == ProcessState::Running)
+                };
+                if !has_running_processes {
+                    if let Err(e) = state
+                        .discord_manager
+                        .set_state(DiscordState::Idle, true)
+                        .await
+                    {
+                        log::warn!("Failed to set Discord Idle state after process exit: {}", e);
+                    }
+                }
             } else {
                 log::error!("Monitor task for process {} could not get state to stop watcher or save processes.", process_id);
             }

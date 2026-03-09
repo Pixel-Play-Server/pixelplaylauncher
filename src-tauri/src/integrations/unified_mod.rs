@@ -1376,6 +1376,7 @@ pub async fn switch_modpack_version(request: ModpackSwitchRequest) -> Result<Mod
     let new_modpack_info = crate::state::profile_state::ModPackInfo {
         source: request.modpack_source.clone(),
         file_hash: None, // Could be calculated if needed
+        is_protected_by_author: false,
     };
     profile.modpack_info = Some(new_modpack_info);
     info!("Updated profile modpack_info with new source: {:?}", request.modpack_source);

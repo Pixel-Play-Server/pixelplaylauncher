@@ -202,6 +202,19 @@ pub struct ModPackInfo {
     pub source: ModPackSource,
     /// File hash for verification (SHA1 for Modrinth, fingerprint for CurseForge)
     pub file_hash: Option<String>,
+    /// If true, users cannot manage mods manually for this instance.
+    #[serde(default)]
+    pub is_protected_by_author: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct ProfileHooks {
+    #[serde(default)]
+    pub pre_launch: Option<String>,
+    #[serde(default)]
+    pub wrapper: Option<String>,
+    #[serde(default)]
+    pub post_exit: Option<String>,
 }
 
 
@@ -258,6 +271,8 @@ pub struct ProfileSettings {
     pub custom_jvm_args: Option<String>, // Zusätzliche JVM-Argumente als String
     #[serde(default)]
     pub quick_play_path: Option<String>, // Quick Play Pfad für direkten Welt-/Server-Start
+    #[serde(default)]
+    pub hooks: ProfileHooks, // Per-instance launch hooks
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -3298,6 +3313,7 @@ impl Default for ProfileSettings {
             extra_game_args: Vec::new(),
             custom_jvm_args: None, // Standardmäßig keine benutzerdefinierten JVM-Args
             quick_play_path: None,
+            hooks: ProfileHooks::default(),
         }
     }
 }

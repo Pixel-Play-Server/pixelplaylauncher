@@ -67,6 +67,9 @@ pub struct pixelplayPackDefinition {
     /// Optional: StartUpHelper configuration for this pack.
     #[serde(rename = "startupHelper", default)]
     pub startup_helper: Option<StartUpHelper>,
+    /// Optional: If true, authors lock mod management for this launcher pack.
+    #[serde(rename = "isProtectedByAuthor", default)]
+    pub is_protected_by_author: bool,
 }
 
 /// Configuration for copying additional files from the pixelplayclient/new directory
@@ -890,6 +893,7 @@ impl pixelplayModpacksConfig {
             is_experimental: base_definition.is_experimental, // Added missing field
             loader_policy: resolved_loader_policy, // RESOLVED loader policy
             startup_helper: base_definition.startup_helper.clone(), // Added missing field
+            is_protected_by_author: base_definition.is_protected_by_author,
         })
     }
 

@@ -239,17 +239,22 @@ pub async fn check_for_updates(
     // 3. Default production/staging endpoints built into code below
 
     // Determine base URL (compile-time override > runtime env > defaults per channel)
-    let base_repo_url = match option_env!("PIXELPLAY_UPDATER_BASE_URL_COMPILED") {
+    let raw_base_repo_url = match option_env!("PIXELPLAY_UPDATER_BASE_URL_COMPILED") {
         Some(compiled) => compiled.to_string(),
         None => std::env::var("PIXELPLAY_UPDATER_BASE_URL").unwrap_or_else(|_| {
             if is_beta_channel {
-                // Beta R2 endpoint including pixelplay path
-                "https://pub-fb468072650f40c9884e13b2bc758f60.r2.dev/pixelplay/releases-v2".to_string()
+                "https://pub-fb468072650f40c9884e13b2bc758f60.r2.dev".to_string()
             } else {
-                // Stable R2 endpoint including pixelplay path
-                "https://pub-dda9306a363141bc9aece427638fbb4a.r2.dev/pixelplay/releases-v2".to_string()
+                "https://pub-dda9306a363141bc9aece427638fbb4a.r2.dev".to_string()
             }
         }),
+    };
+
+    let trimmed_base = raw_base_repo_url.trim_end_matches('/').to_string();
+    let base_repo_url = if trimmed_base.ends_with("/releases-v2") {
+        trimmed_base
+    } else {
+        format!("{}/pixelplay/releases-v2", trimmed_base)
     };
 
     // Compute the required target label per platform/arch:

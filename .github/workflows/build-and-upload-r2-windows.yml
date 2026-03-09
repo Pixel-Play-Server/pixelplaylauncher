@@ -14,6 +14,8 @@ jobs:
       BETA_BUCKET: pixellauncher
       STABLE_ENDPOINT: https://3e2952346f3e901e55bcbc7e074595f4.r2.cloudflarestorage.com/pixelplay
       BETA_ENDPOINT: https://3e2952346f3e901e55bcbc7e074595f4.r2.cloudflarestorage.com/pixellauncher
+      STABLE_PUBLIC_BASE_URL: https://pub-dda9306a363141bc9aece427638fbb4a.r2.dev/pixelplay/releases-v2
+      BETA_PUBLIC_BASE_URL: https://pub-fb468072650f40c9884e13b2bc758f60.r2.dev/pixelplay/releases-v2
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,10 +52,12 @@ jobs:
           if ("${{ github.ref_name }}" -eq "main") {
             echo "bucket=${{ env.STABLE_BUCKET }}" >> $env:GITHUB_OUTPUT
             echo "endpoint=${{ env.STABLE_ENDPOINT }}" >> $env:GITHUB_OUTPUT
+            echo "public_base_url=${{ env.STABLE_PUBLIC_BASE_URL }}" >> $env:GITHUB_OUTPUT
             echo "type=stable" >> $env:GITHUB_OUTPUT
           } else {
             echo "bucket=${{ env.BETA_BUCKET }}" >> $env:GITHUB_OUTPUT
             echo "endpoint=${{ env.BETA_ENDPOINT }}" >> $env:GITHUB_OUTPUT
+            echo "public_base_url=${{ env.BETA_PUBLIC_BASE_URL }}" >> $env:GITHUB_OUTPUT
             echo "type=beta" >> $env:GITHUB_OUTPUT
           }
         shell: pwsh
@@ -102,20 +106,28 @@ jobs:
           R2_ENDPOINT: ${{ steps.setvars.outputs.endpoint }}
           R2_BUCKET: ${{ steps.setvars.outputs.bucket }}
           TYPE: ${{ steps.setvars.outputs.type }}
+          PUBLIC_BASE_URL: ${{ steps.setvars.outputs.public_base_url }}
         run: |
           $OS_NAME="windows-x86_64"
           $VERSION = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
-          $BUILD_NAME="pixelplay-launcher"
-          $FORMAT="nsis"
           $TIMESTAMP = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          $sigFile = Get-ChildItem ci-artifacts -File -Filter "*.sig" | Select-Object -First 1
+          if (-not $sigFile) {
+            throw "No signature file (*.sig) found in ci-artifacts; updater manifest cannot be generated."
+          }
+          $artifactName = $sigFile.Name -replace '\.sig$',''
+          $signature = (Get-Content $sigFile.FullName -Raw).Trim()
+          if ([string]::IsNullOrWhiteSpace($signature)) {
+            throw "Signature file is empty: $($sigFile.FullName)"
+          }
+          $downloadUrl = "$env:PUBLIC_BASE_URL/$OS_NAME/$VERSION/$artifactName"
           $content = @{
             version = $VERSION
-            name = $BUILD_NAME
-            format = $FORMAT
-            os = $OS_NAME
-            timestamp = $TIMESTAMP
-            type = $env:TYPE
-          } | ConvertTo-Json
+            notes = ""
+            pub_date = $TIMESTAMP
+            url = $downloadUrl
+            signature = $signature
+          } | ConvertTo-Json -Compress
           Set-Content -Path version.json -Value $content
           aws --endpoint-url "$env:R2_ENDPOINT" s3 cp version.json "s3://$env:R2_BUCKET/releases-v2/$OS_NAME/$VERSION/version.json"
         shell: pwsh

@@ -23,12 +23,19 @@ export function PlayTab() {
     selectedProfile: storeSelectedProfile,
     loading,
     error: profilesError,
+    fetchProfiles,
     setSelectedProfile,
   } = useProfileStore();
 
   const { activeAccount } = useMinecraftAuthStore();
   const { staticBackground, accentColor } = useThemeStore();
   const { currentEffect } = useBackgroundEffectStore();
+
+  useEffect(() => {
+    if (profiles.length === 0 && !loading) {
+      fetchProfiles();
+    }
+  }, [profiles.length, loading, fetchProfiles]);
 
   useEffect(() => {
     if (!storeSelectedProfile && profiles.length > 0) {

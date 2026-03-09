@@ -34,6 +34,7 @@ export interface pixelplayPackDefinition {
     mods?: pixelplayModEntryDefinition[]; // Updated type used
     assets?: string[]; // Added field
     isExperimental?: boolean; // Added field
+    isProtectedByAuthor?: boolean; // Lock content management when true
 }
 
 // Corresponds to Rust struct pixelplayModpacksConfig

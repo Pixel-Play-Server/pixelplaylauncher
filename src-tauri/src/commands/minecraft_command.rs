@@ -99,6 +99,7 @@ pub async fn get_forge_versions(minecraft_version: String) -> Result<Vec<String>
 
 #[tauri::command]
 pub async fn get_neoforge_versions(minecraft_version: String) -> Result<Vec<String>, CommandError> {
+    let minecraft_version = minecraft_version.trim().to_string();
     let neo_forge_api = NeoForgeApi::new();
     let metadata = neo_forge_api
         .get_all_versions()

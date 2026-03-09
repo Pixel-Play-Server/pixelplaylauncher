@@ -1,0 +1,10 @@
+{
+  "servers": [
+    {
+      "name": "Pixel Play Network",
+      "address": "mc.pixelplay.gg",
+      "accepts_textures": 1,
+      "previews_chat": 1
+    }
+  ]
+}

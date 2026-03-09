@@ -1,11 +1,11 @@
 use crate::config::{ProjectDirsExt, LAUNCHER_DIRECTORY};
 use crate::error::Result;
-use crate::integrations::pixelplay_versions::pixelplayVersionsConfig;
+use crate::integrations::pixelplay_versions::{load_dummy_versions, pixelplayVersionsConfig};
 use crate::minecraft::api::pixelplay_api::pixelplayApi;
 use crate::state::post_init::PostInitializationHandler;
 use crate::state::state_manager::State;
 use async_trait::async_trait;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::fs;
@@ -35,6 +35,63 @@ pub struct pixelplayVersionManager {
 }
 
 impl pixelplayVersionManager {
+    fn parse_version_parts(version: &str) -> Vec<u32> {
+        version
+            .split(|c: char| !c.is_ascii_digit())
+            .filter(|s| !s.is_empty())
+            .filter_map(|s| s.parse::<u32>().ok())
+            .collect()
+    }
+
+    fn cmp_mc_versions(a: &str, b: &str) -> std::cmp::Ordering {
+        let av = Self::parse_version_parts(a);
+        let bv = Self::parse_version_parts(b);
+        let max_len = av.len().max(bv.len());
+        for i in 0..max_len {
+            let ai = *av.get(i).unwrap_or(&0);
+            let bi = *bv.get(i).unwrap_or(&0);
+            match ai.cmp(&bi) {
+                std::cmp::Ordering::Equal => continue,
+                ord => return ord,
+            }
+        }
+        std::cmp::Ordering::Equal
+    }
+
+    fn normalize_main_version(config: &mut pixelplayVersionsConfig) {
+        if config.profiles.is_empty() {
+            return;
+        }
+
+        let latest_idx = config
+            .profiles
+            .iter()
+            .enumerate()
+            .max_by(|(_, a), (_, b)| Self::cmp_mc_versions(&a.game_version, &b.game_version))
+            .map(|(idx, _)| idx);
+
+        for profile in &mut config.profiles {
+            if let Some(info) = profile.pixelplay_information.as_mut() {
+                info.is_main_version = false;
+            }
+        }
+
+        if let Some(idx) = latest_idx {
+            if let Some(info) = config.profiles[idx].pixelplay_information.as_mut() {
+                info.is_main_version = true;
+            } else {
+                config.profiles[idx].pixelplay_information = Some(
+                    crate::state::profile_state::pixelplayInformation {
+                        keep_local_assets: false,
+                        is_experimental: false,
+                        copy_initial_mc_data: true,
+                        is_main_version: true,
+                    },
+                );
+            }
+        }
+    }
+
     /// Creates a new pixelplayVersionManager instance, loading the configuration from the specified path.
     /// If the file doesn't exist, it initializes with a default empty configuration.
     pub fn new(config_path: PathBuf) -> Result<Self> {
@@ -61,7 +118,8 @@ impl pixelplayVersionManager {
 
         // Assuming placeholder token/flag is okay, like for packs
         match pixelplayApi::get_standard_versions(pixelplay_token, is_experimental).await {
-            Ok(new_config) => {
+            Ok(mut new_config) => {
+                Self::normalize_main_version(&mut new_config);
                 debug!(
                     "Successfully fetched {} standard profile definitions from API.",
                     new_config.profiles.len()
@@ -89,7 +147,58 @@ impl pixelplayVersionManager {
             }
             Err(e) => {
                 error!("Failed to fetch pixelplay versions config from API: {}", e);
-                Err(e) // Return the fetch error
+
+                // Fallback 1: load previously cached local config for this channel.
+                let local_path = pixelplay_versions_path_for(is_experimental);
+                match self.load_config_internal(&local_path).await {
+                    Ok(mut local_config) if !local_config.profiles.is_empty() => {
+                        Self::normalize_main_version(&mut local_config);
+                        warn!(
+                            "Using cached local standard versions ({} entries) from {:?}",
+                            local_config.profiles.len(),
+                            local_path
+                        );
+                        let mut config_guard = self.config.write().await;
+                        *config_guard = local_config;
+                        return Ok(());
+                    }
+                    Ok(_) => {
+                        warn!(
+                            "Local standard versions cache at {:?} is empty. Attempting bundled fallback...",
+                            local_path
+                        );
+                    }
+                    Err(local_err) => {
+                        warn!(
+                            "Failed to load local standard versions cache from {:?}: {}",
+                            local_path,
+                            local_err
+                        );
+                    }
+                }
+
+                // Fallback 2: bootstrap from bundled mock-data for first run / API outages.
+                if let Err(seed_err) = load_dummy_versions().await {
+                    warn!(
+                        "Failed to seed bundled standard versions fallback file: {}",
+                        seed_err
+                    );
+                }
+
+                match self.load_config_internal(&local_path).await {
+                    Ok(mut seed_config) if !seed_config.profiles.is_empty() => {
+                        Self::normalize_main_version(&mut seed_config);
+                        warn!(
+                            "Using bundled standard versions fallback ({} entries).",
+                            seed_config.profiles.len()
+                        );
+                        let mut config_guard = self.config.write().await;
+                        *config_guard = seed_config;
+                        Ok(())
+                    }
+                    Ok(_) => Err(e),
+                    Err(_) => Err(e),
+                }
             }
         }
     }
@@ -108,7 +217,10 @@ impl pixelplayVersionManager {
         let data = fs::read_to_string(path).await?;
 
         match serde_json::from_str(&data) {
-            Ok(config) => Ok(config),
+            Ok(mut config) => {
+                Self::normalize_main_version(&mut config);
+                Ok(config)
+            }
             Err(e) => {
                 error!("Failed to parse pixelplay_versions.json at {:?}: {}. Returning default empty config.", path, e);
                 // Return default instead of error to allow launcher to start even with broken config

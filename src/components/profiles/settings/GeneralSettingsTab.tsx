@@ -159,6 +159,84 @@ export function GeneralSettingsTab({
           </p>
         </div>
 
+        <div>
+          <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
+            pre launch hook
+          </label>
+          <SearchStyleInput
+            value={editedProfile.settings.hooks?.pre_launch || ""}
+            onChange={(e) =>
+              updateProfile({
+                settings: {
+                  ...editedProfile.settings,
+                  hooks: {
+                    ...(editedProfile.settings.hooks || {
+                      pre_launch: null,
+                      wrapper: null,
+                      post_exit: null,
+                    }),
+                    pre_launch: e.target.value || null,
+                  },
+                },
+              })
+            }
+            placeholder="Command to execute before game launch"
+            className="text-xl"
+          />
+        </div>
+
+        <div>
+          <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
+            wrapper hook
+          </label>
+          <SearchStyleInput
+            value={editedProfile.settings.hooks?.wrapper || ""}
+            onChange={(e) =>
+              updateProfile({
+                settings: {
+                  ...editedProfile.settings,
+                  hooks: {
+                    ...(editedProfile.settings.hooks || {
+                      pre_launch: null,
+                      wrapper: null,
+                      post_exit: null,
+                    }),
+                    wrapper: e.target.value || null,
+                  },
+                },
+              })
+            }
+            placeholder="Wrapper command (e.g. gamemoderun)"
+            className="text-xl"
+          />
+        </div>
+
+        <div>
+          <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
+            post exit hook
+          </label>
+          <SearchStyleInput
+            value={editedProfile.settings.hooks?.post_exit || ""}
+            onChange={(e) =>
+              updateProfile({
+                settings: {
+                  ...editedProfile.settings,
+                  hooks: {
+                    ...(editedProfile.settings.hooks || {
+                      pre_launch: null,
+                      wrapper: null,
+                      post_exit: null,
+                    }),
+                    post_exit: e.target.value || null,
+                  },
+                },
+              })
+            }
+            placeholder="Command to execute after game closes"
+            className="text-xl"
+          />
+        </div>
+
 
       </div>
 

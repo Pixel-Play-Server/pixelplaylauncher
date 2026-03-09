@@ -14,6 +14,8 @@ jobs:
       BETA_BUCKET: pixellauncher
       STABLE_ENDPOINT: https://3e2952346f3e901e55bcbc7e074595f4.r2.cloudflarestorage.com/pixelplay
       BETA_ENDPOINT: https://3e2952346f3e901e55bcbc7e074595f4.r2.cloudflarestorage.com/pixellauncher
+      STABLE_PUBLIC_BASE_URL: https://pub-dda9306a363141bc9aece427638fbb4a.r2.dev/pixelplay/releases-v2
+      BETA_PUBLIC_BASE_URL: https://pub-fb468072650f40c9884e13b2bc758f60.r2.dev/pixelplay/releases-v2
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,10 +53,12 @@ jobs:
           if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
             echo "bucket=${{ env.STABLE_BUCKET }}" >> $GITHUB_OUTPUT
             echo "endpoint=${{ env.STABLE_ENDPOINT }}" >> $GITHUB_OUTPUT
+            echo "public_base_url=${{ env.STABLE_PUBLIC_BASE_URL }}" >> $GITHUB_OUTPUT
             echo "type=stable" >> $GITHUB_OUTPUT
           else
             echo "bucket=${{ env.BETA_BUCKET }}" >> $GITHUB_OUTPUT
             echo "endpoint=${{ env.BETA_ENDPOINT }}" >> $GITHUB_OUTPUT
+            echo "public_base_url=${{ env.BETA_PUBLIC_BASE_URL }}" >> $GITHUB_OUTPUT
             echo "type=beta" >> $GITHUB_OUTPUT
           fi
 
@@ -99,11 +103,22 @@ jobs:
           R2_ENDPOINT: ${{ steps.setvars.outputs.endpoint }}
           R2_BUCKET: ${{ steps.setvars.outputs.bucket }}
           TYPE: ${{ steps.setvars.outputs.type }}
+          PUBLIC_BASE_URL: ${{ steps.setvars.outputs.public_base_url }}
         run: |
           OS_NAME="mac-arm"
           VERSION=$(grep 'version' src-tauri/tauri.conf.json | head -1 | cut -d '"' -f4)
-          BUILD_NAME="pixelplay-launcher"
-          FORMAT="zip"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          echo "{\"version\": \"$VERSION\", \"name\": \"$BUILD_NAME\", \"format\": \"$FORMAT\", \"os\": \"$OS_NAME\", \"timestamp\": \"$TIMESTAMP\", \"type\": \"$TYPE\"}" > version.json
+          SIG_FILE=$(ls -1 ci-artifacts/*.sig 2>/dev/null | head -n 1)
+          if [ -z "$SIG_FILE" ]; then
+            echo "No signature file (*.sig) found in ci-artifacts; updater manifest cannot be generated."
+            exit 1
+          fi
+          SIGNATURE=$(tr -d '\r\n' < "$SIG_FILE")
+          if [ -z "$SIGNATURE" ]; then
+            echo "Signature file is empty: $SIG_FILE"
+            exit 1
+          fi
+          ARTIFACT_NAME=$(basename "$SIG_FILE" .sig)
+          DOWNLOAD_URL="$PUBLIC_BASE_URL/$OS_NAME/$VERSION/$ARTIFACT_NAME"
+          printf '{"version":"%s","notes":"","pub_date":"%s","url":"%s","signature":"%s"}' "$VERSION" "$TIMESTAMP" "$DOWNLOAD_URL" "$SIGNATURE" > version.json
           aws --endpoint-url "$R2_ENDPOINT" s3 cp version.json s3://$R2_BUCKET/releases-v2/${OS_NAME}/$VERSION/version.json

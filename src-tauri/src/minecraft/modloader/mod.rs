@@ -33,6 +33,16 @@ pub enum LoaderVersionReason {
 pub struct ModloaderFactory;
 
 impl ModloaderFactory {
+    fn normalize_loader_version(version: &str) -> String {
+        version
+            .trim()
+            .trim_end_matches(" (stable)")
+            .trim_end_matches(" (latest)")
+            .trim_start_matches("forge-")
+            .trim_start_matches("neoforge-")
+            .to_string()
+    }
+
     /// Resolves the loader version to use for a profile, considering pixelplay pack policies and user overrides
     pub async fn resolve_loader_version(
         profile: &Profile,
@@ -280,7 +290,23 @@ impl ModloaderInstaller for NeoForgeInstaller {
             let compatible_versions = versions.get_versions_for_minecraft(version_id);
 
             let target_version_str = match &profile.loader_version {
-                Some(v) if !v.is_empty() && compatible_versions.contains(v) => v.clone(),
+                Some(v) if !v.is_empty() => {
+                    let normalized = ModloaderFactory::normalize_loader_version(v);
+                    if compatible_versions.contains(&normalized) {
+                        normalized
+                    } else {
+                        compatible_versions
+                            .iter()
+                            .find(|cv| cv.ends_with(&normalized))
+                            .cloned()
+                            .unwrap_or_else(|| {
+                                compatible_versions
+                                    .first()
+                                    .cloned()
+                                    .unwrap_or_else(|| version_id.to_string())
+                            })
+                    }
+                }
                 _ => compatible_versions
                     .first()
                     .cloned()

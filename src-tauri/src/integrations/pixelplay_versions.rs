@@ -108,7 +108,7 @@ pub async fn load_dummy_versions() -> Result<()> {
         AppError::Other("Failed to get parent directory of CARGO_MANIFEST_DIR".to_string())
     })?;
 
-    let source_path = project_root.join("minecraft-data/nrc/pixelplay_versions.json");
+    let source_path = project_root.join("mock-data/noriskclient/pixelplay_versions.json");
     // --- End path resolution ---
 
     if source_path.exists() {

@@ -1,51 +1,13 @@
 {
   "profiles": [
     {
-      "id": "ea361d90-5541-4a2a-8eea-8cf1f822d6cb",
-  "name": "Pixel Play DEV 1.21",
-  "description": "Pixel Play (1.21)",
-      "game_version": "1.21",
-      "loader": "fabric",
-      "loader_version": "0.16.13",
-      "selected_pixelplay_pack_id": "pixelplay-dev",
-      "path": "pixelplayclient/new",
-      "is_standard_version": true,
-      "group": "pixelplay CLIENT",
-      "banner": {
-        "source": {
-          "type": "url",
-          "url": "https://fabricmc.net/assets/logo.png"
-        }
-      },
-      "pixelplay_information": {}
-    },
-    {
-      "id": "fc452b71-8e34-4b7a-9d2c-a6f13e5c7d8f",
-  "name": "Pixel Play DEV 1.21.4",
-  "description": "Pixel Play (1.21.4)",
-      "game_version": "1.21.4",
-      "loader": "fabric",
-      "loader_version": "0.16.13",
-      "selected_pixelplay_pack_id": "pixelplay-dev",
-      "path": "pixelplayclient/new",
-      "is_standard_version": true,
-      "group": "pixelplay CLIENT",
-      "banner": {
-        "source": {
-          "type": "url",
-          "url": "https://fabricmc.net/assets/logo.png"
-        }
-      },
-      "pixelplay_information": {}
-    },
-    {
       "id": "b7cd5e92-3a16-4f85-bc60-9d8e47a1f3d2",
-  "name": "Pixel Play DEV 1.21.5",
-  "description": "Pixel Play (1.21.5)",
+      "name": "Pixel Play 1.21.5",
+      "description": "Pixel Play (1.21.5)",
       "game_version": "1.21.5",
       "loader": "fabric",
       "loader_version": "0.16.13",
-      "selected_pixelplay_pack_id": "pixelplay-dev",
+      "selected_pixelplay_pack_id": "pixelplay",
       "path": "pixelplayclient/new",
       "is_standard_version": true,
       "group": "pixelplay CLIENT",

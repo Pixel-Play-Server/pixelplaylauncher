@@ -53,6 +53,7 @@ const WORLDS_TAB_ICONS_TO_PRELOAD = [
   "solar:wifi-bold",
   // Action Buttons (World)
   "solar:copy-bold",
+  "solar:star-bold",
   "solar:folder-open-bold-duotone",
   "solar:trash-bin-trash-bold",
   // Common / Dynamic states
@@ -564,6 +565,7 @@ export function WorldsTab({
   };
 
   const effectiveSearchQuery = searchQuery || localSearchQuery;
+  const primaryFeaturedServer = servers.find((s) => s.is_featured && s.address);
 
   // --- Render Item Function for GenericList ---
   const renderDisplayItem = useCallback(
@@ -726,8 +728,8 @@ export function WorldsTab({
             ) : (
               <>
                 {isPinging ? (
-                  <TagBadge size="sm" variant="default">
-                    Pinging...
+                <TagBadge size="sm" variant="default">
+                    Consultando...
                   </TagBadge>
                 ) : hasPingError ? (
                   <TagBadge size="sm" variant="destructive">
@@ -791,12 +793,17 @@ export function WorldsTab({
                             {pingInfo.version_name}
                           </TagBadge>
                         )}
+                        {item.is_featured && (
+                          <TagBadge size="sm" variant="info">
+                            Destacado
+                          </TagBadge>
+                        )}
                       </>
                     );
                   })()
                 ) : (
                   <TagBadge size="sm" variant="inactive">
-                    Offline / Unknown
+                    Desconocido
                   </TagBadge>
                 )}
               </>
@@ -808,10 +815,10 @@ export function WorldsTab({
       const playActions = [
         {
           id: "play",
-          label: isLaunching ? "STOP" : (isWorld ? "PLAY" : "JOIN"),
+          label: isLaunching ? "DETENER" : (isWorld ? "JUGAR" : "UNIRSE"),
           icon: isLaunching ? "solar:stop-bold" : (isWorld ? "solar:play-bold" : "solar:login-3-bold"),
           variant: isLaunching ? "destructive" : "secondary",
-          tooltip: isLaunching ? "Stop Launch" : (isWorld ? "Play World" : "Join Server"),
+          tooltip: isLaunching ? "Detener lanzamiento" : (isWorld ? "Jugar mundo" : "Unirse al servidor"),
           disabled: !isWorld && !item.address,
           onClick: () => handleWorldServerLaunch(item),
         },
@@ -852,10 +859,10 @@ export function WorldsTab({
           {/* Play/Join Button */}
           <ActionButton
             icon={isLaunching ? "solar:stop-bold" : (isWorld ? "solar:play-bold" : "solar:login-3-bold")}
-            label={isLaunching ? "STOP" : (isWorld ? "PLAY" : "JOIN")}
+            label={isLaunching ? "DETENER" : (isWorld ? "JUGAR" : "UNIRSE")}
             variant={isLaunching ? "destructive" : "secondary"}
             size="sm"
-            tooltip={isLaunching ? "Stop Launch" : (isWorld ? "Play World" : "Join Server")}
+            tooltip={isLaunching ? "Detener lanzamiento" : (isWorld ? "Jugar mundo" : "Unirse al servidor")}
             disabled={!isWorld && !item.address}
             onClick={() => handleWorldServerLaunch(item)}
           />
@@ -867,7 +874,7 @@ export function WorldsTab({
                 icon="solar:copy-bold"
                 variant="icon-only"
                 size="sm"
-                tooltip="Copy World"
+                tooltip="Copiar mundo"
                 disabled={isCopyingWorld}
                 onClick={() => handleOpenCopyDialog(item)}
               />
@@ -875,7 +882,7 @@ export function WorldsTab({
                 icon="solar:folder-open-bold-duotone"
                 variant="icon-only"
                 size="sm"
-                tooltip="Open World Folder"
+                tooltip="Abrir carpeta del mundo"
                 onClick={() => handleOpenWorldFolder(item)}
               />
               <ActionButton
@@ -885,7 +892,7 @@ export function WorldsTab({
                   : "solar:trash-bin-trash-bold"}
                 variant="icon-only"
                 size="sm"
-                tooltip="Delete World"
+                tooltip="Eliminar mundo"
                 disabled={isActuallyDeleting &&
                   worldToDelete?.folder_name === item.folder_name}
                 onClick={() => handleDeleteRequest(item)}
@@ -948,7 +955,7 @@ export function WorldsTab({
         {/* Only show search if parent isn't providing it */}
         {!searchQuery && (
           <SearchWithFilters
-            placeholder="search worlds & servers..."
+            placeholder="buscar mundos y servidores..."
             searchValue={localSearchQuery}
             onSearchChange={setLocalSearchQuery}
             showSort={false}
@@ -958,9 +965,22 @@ export function WorldsTab({
         )}
 
         <div className="flex items-center gap-4 ml-auto">
+          {primaryFeaturedServer?.address && (
+            <ActionButton
+              icon="solar:star-bold"
+              label="PIXEL PLAY"
+              variant="secondary"
+              size="sm"
+              tooltip={`Unirse rapido a ${primaryFeaturedServer.address}`}
+              onClick={() =>
+                handleQuickPlayLaunch(undefined, primaryFeaturedServer.address || undefined)
+              }
+              disabled={isLaunching}
+            />
+          )}
           <ActionButton
             icon={loading ? "solar:refresh-circle-bold-duotone" : "solar:refresh-bold"}
-            label="REFRESH"
+            label="ACTUALIZAR"
             variant="text"
             size="sm"
             onClick={handleRefresh}
@@ -971,7 +991,7 @@ export function WorldsTab({
                 displayItems.filter((item) => item.type === "server").length >
                   0)
             }
-            tooltip="Refresh worlds and servers"
+            tooltip="Actualizar mundos y servidores"
             className={loading ? "animate-spin" : ""}
           />
         </div>
@@ -987,10 +1007,10 @@ export function WorldsTab({
         emptyStateIcon={"solar:planet-bold"}
         emptyStateMessage={
           effectiveSearchQuery
-            ? `no worlds or servers match your search`
-            : `no worlds or servers found`
+            ? `no hay mundos ni servidores que coincidan con tu busqueda`
+            : `no se encontraron mundos ni servidores`
         }
-        emptyStateDescription={"Create worlds or add servers in Minecraft"}
+        emptyStateDescription={"Crea mundos o agrega servidores en Minecraft"}
         loadingItemCount={0}
       />
 

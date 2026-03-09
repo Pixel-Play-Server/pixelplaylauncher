@@ -110,6 +110,7 @@ export interface ServerInfo {
     icon_base64: string | null; // Base64 string for the icon
     accepts_textures: number | null; // 0=prompt, 1=enabled, 2=disabled (Rust u8)
     previews_chat: number | null; // Seems to be boolean 0/1 (Rust u8)
+    is_featured?: boolean | null;
 }
 
 export interface ServerPingInfo {

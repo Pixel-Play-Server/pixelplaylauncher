@@ -291,6 +291,15 @@ export function LocalContentTabV2<T extends LocalContentItem>({
     onRefreshRequired,
   });
 
+  const selectedPackDefinition =
+    profile?.selected_pixelplay_pack_id && pixelplayPacksConfig
+      ? pixelplayPacksConfig.packs?.[profile.selected_pixelplay_pack_id]
+      : undefined;
+  const isAuthorProtectedPack = !!selectedPackDefinition?.isProtectedByAuthor;
+  const shouldHideModsForProtectedPack =
+    isAuthorProtectedPack &&
+    (contentType === "Mod" || contentType === "pixelplayMod");
+
   // Map UI contentType to BackendContentType for the store
   const backendContentTypeForStore = useMemo(() => {
     return contentType as BackendContentType;
@@ -338,9 +347,14 @@ export function LocalContentTabV2<T extends LocalContentItem>({
     }
   };
 
-  // Fetch pixelplayPacksConfig if content type is pixelplayMod
+  // Fetch pixelplayPacksConfig when needed for pack UI or protection checks
   useEffect(() => {
-    if (contentType === "pixelplayMod" && profile) {
+    const needsPackConfig =
+      !!profile &&
+      (contentType === "pixelplayMod" ||
+        (contentType === "Mod" && !!profile.selected_pixelplay_pack_id));
+
+    if (needsPackConfig && profile) {
       const fetchPacks = async () => {
         setIsFetchingPacksConfig(true);
         try {
@@ -1350,7 +1364,7 @@ export function LocalContentTabV2<T extends LocalContentItem>({
                 )}
 
                 {/* Browse and Add buttons - only for non-pixelplayMod types */}
-                {effectiveOnAddContent && contentType !== "pixelplayMod" && profile && (
+                {effectiveOnAddContent && contentType !== "pixelplayMod" && profile && !isAuthorProtectedPack && (
                   <ContentActionButtons
                     actions={[
                       {
@@ -1412,6 +1426,21 @@ export function LocalContentTabV2<T extends LocalContentItem>({
         Profile data is not available. Cannot display{" "}
         {itemTypeNamePlural.toLowerCase()}.
       </div>
+    );
+  }
+
+  if (shouldHideModsForProtectedPack) {
+    return (
+      <>
+        <EmptyState
+          icon="solar:lock-keyhole-bold-duotone"
+          message="Mods protegidos por el autor"
+          description="Este modpack del launcher bloquea la edición y visualización de mods para mantener la instalación íntegra."
+          fullHeight={true}
+          className="justify-center"
+        />
+        {confirmDialog}
+      </>
     );
   }
 

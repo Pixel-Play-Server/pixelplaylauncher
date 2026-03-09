@@ -1749,6 +1749,7 @@ pub async fn import_curseforge_pack_as_profile(
                 file_id,
             },
             file_hash: None, // Could be added later if needed
+            is_protected_by_author: false,
         };
 
         profile.modpack_info = Some(modpack_info);

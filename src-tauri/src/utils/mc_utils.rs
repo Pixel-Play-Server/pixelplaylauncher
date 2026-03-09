@@ -1,4 +1,4 @@
-use crate::config::{ProjectDirsExt, LAUNCHER_DIRECTORY};
+use crate::config::{ProjectDirsExt, HTTP_CLIENT, LAUNCHER_DIRECTORY};
 use crate::error::{AppError, Result};
 use crate::minecraft::dto::piston_meta::AssetIndex;
 use crate::state::event_state::{EventPayload, EventType};
@@ -1248,6 +1248,160 @@ pub struct ServerInfo {
     pub icon_base64: Option<String>,
     pub accepts_textures: Option<u8>,
     pub previews_chat: Option<u8>,
+    pub is_featured: Option<bool>,
+}
+
+const FEATURED_SERVERS_URL_STABLE: &str =
+    "https://pub-dda9306a363141bc9aece427638fbb4a.r2.dev/pixelplay/featured_servers.json";
+const FEATURED_SERVERS_URL_BETA: &str =
+    "https://pub-fb468072650f40c9884e13b2bc758f60.r2.dev/pixelplay/featured_servers.json";
+
+#[derive(Deserialize, Debug, Clone)]
+struct FeaturedServerEntry {
+    name: Option<String>,
+    address: String,
+    #[serde(default)]
+    icon_base64: Option<String>,
+    #[serde(default)]
+    accepts_textures: Option<u8>,
+    #[serde(default)]
+    previews_chat: Option<u8>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(untagged)]
+enum FeaturedServersPayload {
+    Wrapped { servers: Vec<FeaturedServerEntry> },
+    Array(Vec<FeaturedServerEntry>),
+}
+
+fn featured_servers_endpoint(is_experimental: bool) -> String {
+    if is_experimental {
+        return FEATURED_SERVERS_URL_BETA.to_string();
+    }
+
+    std::env::var("PIXELPLAY_FEATURED_SERVERS_URL")
+        .unwrap_or_else(|_| FEATURED_SERVERS_URL_STABLE.to_string())
+}
+
+async fn fetch_featured_servers(is_experimental: bool) -> Vec<ServerInfo> {
+    let endpoint = featured_servers_endpoint(is_experimental);
+    info!("[Servers] Fetching featured servers from {}", endpoint);
+
+    let response = match HTTP_CLIENT.get(&endpoint).send().await {
+        Ok(resp) => resp,
+        Err(e) => {
+            warn!(
+                "[Servers] Failed to fetch featured servers from {}: {}",
+                endpoint, e
+            );
+            return Vec::new();
+        }
+    };
+
+    if !response.status().is_success() {
+        warn!(
+            "[Servers] Featured servers endpoint returned {} for {}",
+            response.status(),
+            endpoint
+        );
+        return Vec::new();
+    }
+
+    let payload = match response.json::<FeaturedServersPayload>().await {
+        Ok(data) => data,
+        Err(e) => {
+            warn!(
+                "[Servers] Failed to parse featured servers JSON from {}: {}",
+                endpoint, e
+            );
+            return Vec::new();
+        }
+    };
+
+    let entries = match payload {
+        FeaturedServersPayload::Wrapped { servers } => servers,
+        FeaturedServersPayload::Array(servers) => servers,
+    };
+
+    let mut featured_servers: Vec<ServerInfo> = Vec::new();
+    for entry in entries {
+        let normalized = entry.address.trim().to_string();
+        if normalized.is_empty() {
+            continue;
+        }
+
+        featured_servers.push(ServerInfo {
+            name: entry.name,
+            address: Some(normalized),
+            icon_base64: entry.icon_base64,
+            accepts_textures: entry.accepts_textures,
+            previews_chat: entry.previews_chat,
+            is_featured: Some(true),
+        });
+    }
+
+    info!(
+        "[Servers] Loaded {} featured servers from remote JSON",
+        featured_servers.len()
+    );
+    featured_servers
+}
+
+async fn parse_servers_dat(path: &PathBuf, profile_name: &str) -> Result<ServerListNbt> {
+    let servers_dat_bytes = fs::read(path).await.map_err(|e| {
+        error!(
+            "[Servers] Failed to read servers.dat for profile '{}': {}. Path: {}",
+            profile_name,
+            e,
+            path.display()
+        );
+        AppError::Io(e)
+    })?;
+
+    match from_bytes(&servers_dat_bytes) {
+        Ok(data) => Ok(data),
+        Err(e) => {
+            warn!(
+                "[Servers] Failed to parse raw servers.dat for '{}': {}. Attempting GZip fallback...",
+                profile_name,
+                e
+            );
+            let reader = BufReader::new(Cursor::new(&servers_dat_bytes));
+            let mut decoder = GzipDecoder::new(reader);
+            let mut decompressed_bytes = Vec::new();
+
+            match decoder.read_to_end(&mut decompressed_bytes).await {
+                Ok(_) => match from_bytes::<ServerListNbt>(&decompressed_bytes) {
+                    Ok(decompressed_data) => {
+                        warn!(
+                            "[Servers] Successfully parsed servers.dat for '{}' after async GZip fallback.",
+                            profile_name
+                        );
+                        Ok(decompressed_data)
+                    }
+                    Err(decompressed_e) => {
+                        error!(
+                            "[Servers] Failed to parse NBT from GZipped servers.dat for '{}' (async fallback): {}. Path: {}",
+                            profile_name,
+                            decompressed_e,
+                            path.display()
+                        );
+                        Err(AppError::Nbt(e))
+                    }
+                },
+                Err(decompression_e) => {
+                    error!(
+                        "[Servers] Async GZip decompression failed for servers.dat for '{}': {}. Path: {}",
+                        profile_name,
+                        decompression_e,
+                        path.display()
+                    );
+                    Err(AppError::Nbt(e))
+                }
+            }
+        }
+    }
 }
 
 /// Parses a Minecraft server address string (e.g., "example.com", "example.com:25566", "[::1]:25565")
@@ -1358,109 +1512,93 @@ pub async fn get_profile_servers(profile_id: Uuid) -> Result<Vec<ServerInfo>> {
         Err(e) => return Err(e), // Propagate other errors
     };
 
-    // Calculate the instance path
+    // Calculate primary instance path
     let instance_path = state
         .profile_manager
         .calculate_instance_path_for_profile(&profile)?;
-    let servers_dat_path = instance_path.join("servers.dat");
-    info!(
-        "[Servers] Looking for servers.dat at: {}",
-        servers_dat_path.display()
-    );
+    let mut candidate_paths: Vec<PathBuf> = vec![instance_path.join("servers.dat")];
 
-    if !servers_dat_path.is_file() {
-        info!(
-            "[Servers] servers.dat not found for profile '{}' (path: {}). Returning empty list.",
-            profile.name,
-            servers_dat_path.display()
-        );
-        return Ok(Vec::new()); // No servers.dat means no servers saved
+    let launcher_config = state.config_manager.get_config().await;
+    if let Some(custom_game_dir) = launcher_config.custom_game_directory {
+        candidate_paths.push(custom_game_dir.join("servers.dat"));
+    }
+    candidate_paths.push(get_default_minecraft_dir().join("servers.dat"));
+
+    // Keep order but avoid duplicate paths
+    candidate_paths.dedup();
+
+    let mut selected_path: Option<PathBuf> = None;
+    for path in candidate_paths {
+        info!("[Servers] Looking for servers.dat at: {}", path.display());
+        if path.is_file() {
+            selected_path = Some(path);
+            break;
+        }
     }
 
-    // Read the servers.dat file
-    let servers_dat_bytes = match fs::read(&servers_dat_path).await {
-        Ok(bytes) => bytes,
-        Err(e) => {
-            error!(
-                "[Servers] Failed to read servers.dat for profile '{}': {}. Path: {}",
-                profile.name,
-                e,
-                servers_dat_path.display()
-            );
-            return Err(AppError::Io(e));
-        }
-    };
-
-    // Parse the NBT data (servers.dat is typically *not* GZipped)
-    let server_list_nbt: ServerListNbt = match from_bytes(&servers_dat_bytes) {
-        Ok(data) => data,
-        Err(e) => {
-            // Try parsing with GZip decompression asynchronously as a fallback (less common)
-            warn!(
-                "[Servers] Failed to parse raw servers.dat for '{}': {}. Attempting GZip fallback...",
-                profile.name,
-                e
-            );
-            let reader = BufReader::new(Cursor::new(&servers_dat_bytes)); // Create async reader from bytes
-            let mut decoder = GzipDecoder::new(reader);
-            let mut decompressed_bytes = Vec::new();
-
-            match decoder.read_to_end(&mut decompressed_bytes).await {
-                Ok(_) => {
-                    match from_bytes::<ServerListNbt>(&decompressed_bytes) {
-                        Ok(decompressed_data) => {
-                            warn!(
-                                "[Servers] Successfully parsed servers.dat for '{}' after async GZip fallback.",
-                                profile.name
-                            );
-                            decompressed_data
-                        }
-                        Err(decompressed_e) => {
-                            error!(
-                                "[Servers] Failed to parse NBT from GZipped servers.dat for '{}' (async fallback): {}. Path: {}",
-                                profile.name,
-                                decompressed_e,
-                                servers_dat_path.display()
-                            );
-                            // Return original error if fallback parsing fails
-                            return Err(AppError::Nbt(e));
-                        }
-                    }
-                }
-                Err(decompression_e) => {
-                    error!(
-                        "[Servers] Async GZip decompression failed for servers.dat for '{}': {}. Path: {}",
-                        profile.name,
-                        decompression_e,
-                        servers_dat_path.display()
-                    );
-                    // Return original error if decompression fails
-                    return Err(AppError::Nbt(e));
-                }
-            }
-        }
-    };
-
-    // Map the NBT structure to our ServerInfo structure
-    let server_infos: Vec<ServerInfo> = server_list_nbt
-        .servers
-        .into_iter()
-        .map(|nbt_entry| {
-            ServerInfo {
+    let mut server_infos: Vec<ServerInfo> = Vec::new();
+    if let Some(servers_dat_path) = selected_path {
+        let server_list_nbt = parse_servers_dat(&servers_dat_path, &profile.name).await?;
+        server_infos = server_list_nbt
+            .servers
+            .into_iter()
+            .map(|nbt_entry| ServerInfo {
                 name: nbt_entry.name,
                 address: nbt_entry.ip, // Map 'ip' to 'address'
                 icon_base64: nbt_entry.icon,
                 accepts_textures: nbt_entry.accept_textures,
                 previews_chat: nbt_entry.previews_chat,
-            }
-        })
-        .collect();
+                is_featured: Some(false),
+            })
+            .collect();
+    } else {
+        info!(
+            "[Servers] servers.dat not found for profile '{}' in instance/custom/default locations. Continuing with featured servers only.",
+            profile.name
+        );
+    }
 
     info!(
         "[Servers] Found {} server entries in servers.dat for profile {}",
         server_infos.len(),
         profile_id
     );
+
+    // Merge remote featured servers without duplicating addresses already present.
+    let is_experimental = state.config_manager.is_experimental_mode().await;
+    let featured_servers = fetch_featured_servers(is_experimental).await;
+    if !featured_servers.is_empty() {
+        let mut known_addresses: std::collections::HashSet<String> = server_infos
+            .iter()
+            .filter_map(|s| s.address.as_ref())
+            .map(|s| s.trim().to_lowercase())
+            .filter(|s| !s.is_empty())
+            .collect();
+
+        let mut inserted = 0usize;
+        for featured in featured_servers {
+            let key = featured
+                .address
+                .as_ref()
+                .map(|s| s.trim().to_lowercase())
+                .unwrap_or_default();
+
+            if key.is_empty() || known_addresses.contains(&key) {
+                continue;
+            }
+
+            known_addresses.insert(key);
+            server_infos.push(featured);
+            inserted += 1;
+        }
+
+        info!(
+            "[Servers] Added {} featured servers (total now: {}).",
+            inserted,
+            server_infos.len()
+        );
+    }
+
     Ok(server_infos)
 }
 

@@ -16,7 +16,7 @@ const DEFAULT_DISCORD_APP_ID: &str = "1423767021371261038"; // Replace if you ha
 pub enum DiscordState {
     Idle,
     InGame { profile: String, version: Option<String> }, // profile name and optional version
-    Modal(String), // modal name currently shown in launcher
+    Modal(String), // launcher section/modal currently shown
     // TODO: Add other states like InGame(profile_name), Editing(profile_name) etc.
 }
 
@@ -291,9 +291,9 @@ impl DiscordManager {
         let large_text_owned = self.large_text.read().await.clone();
         let large_text_static: &'static str = Box::leak(large_text_owned.into_boxed_str());
 
-            // Buttons: Download and Play (Play uses a custom schema that should be handled by the OS / launcher)
-            let download_button = activity::Button::new("DOWNLOAD", "https://pixelplay.gg/download");
-            let play_button = activity::Button::new("PLAY", "pixelplay://play");
+            // Buttons: concise and branded
+            let download_button = activity::Button::new("DESCARGAR", "https://pixelplay.gg/download");
+            let play_button = activity::Button::new("ABRIR LAUNCHER", "pixelplay://play");
             let buttons = vec![play_button, download_button];
 
         debug!("Creating activity for Discord state: {:?}", state);
@@ -323,31 +323,45 @@ impl DiscordManager {
                 };
 
                 activity::Activity::new()
-                    .state("Inactivo")
+                    .state("Descansando")
+                    .details("Pixel Play Launcher")
                     .assets(activity::Assets::new().large_image(icon_static).large_text(large_text_static))
                     .timestamps(activity::Timestamps::new().start(start_time))
                     .buttons(buttons) // Include buttons here
             }
             DiscordState::InGame { profile, version } => {
                 // When in game, show profile name and optionally version
-                let mut state_text = format!("Jugando: {}", profile);
+                let mut state_text = format!("Jugando {}", profile);
                 if let Some(v) = version {
-                    state_text = format!("{} - {}", state_text, v);
+                    state_text = format!("{} · {}", state_text, v);
                 }
                 let state_text_static: &'static str = Box::leak(state_text.into_boxed_str());
-                let details = "En partida";
+                let details_owned = "En partida".to_string();
+                let details: &'static str = Box::leak(details_owned.into_boxed_str());
+                let started_at = self
+                    .last_user_activity
+                    .read()
+                    .await
+                    .unwrap_or_else(|| {
+                        SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .map(|d| d.as_secs() as i64)
+                            .unwrap_or(0)
+                    });
                 activity::Activity::new()
                     .state(state_text_static)
                     .details(details)
                     .assets(activity::Assets::new().large_image(icon_static).large_text(large_text_static))
+                    .timestamps(activity::Timestamps::new().start(started_at))
                     .buttons(buttons)
             }
             DiscordState::Modal(modal_name) => {
-                let state_text = format!("Viendo: {}", modal_name);
+                let state_text = format!("Launcher · {}", modal_name);
                 let state_text_static: &'static str = Box::leak(state_text.into_boxed_str());
+                let details_text = "Explorando Pixel Play";
                 activity::Activity::new()
                     .state(state_text_static)
-                    .details("En el lanzador")
+                    .details(details_text)
                     .assets(activity::Assets::new().large_image(icon_static).large_text(large_text_static))
                     .buttons(buttons)
             }

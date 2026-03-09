@@ -791,6 +791,21 @@ pub async fn set_profile_mod_enabled(
         profile_id, mod_id, enabled
     );
     let state = State::get().await?;
+    let profile = state.profile_manager.get_profile(profile_id).await?;
+    if let Some(pack_id) = profile.selected_pixelplay_pack_id {
+        let packs_config = state.pixelplay_pack_manager.get_config().await;
+        if packs_config
+            .packs
+            .get(&pack_id)
+            .map(|p| p.is_protected_by_author)
+            .unwrap_or(false)
+        {
+            return Err(CommandError::from(AppError::Other(
+                "This launcher modpack is protected by the author. Mod state changes are blocked."
+                    .to_string(),
+            )));
+        }
+    }
     state
         .profile_manager
         .set_mod_enabled(profile_id, mod_id, enabled)
@@ -805,6 +820,21 @@ pub async fn delete_mod_from_profile(profile_id: Uuid, mod_id: Uuid) -> Result<(
         profile_id, mod_id
     );
     let state = State::get().await?;
+    let profile = state.profile_manager.get_profile(profile_id).await?;
+    if let Some(pack_id) = profile.selected_pixelplay_pack_id {
+        let packs_config = state.pixelplay_pack_manager.get_config().await;
+        if packs_config
+            .packs
+            .get(&pack_id)
+            .map(|p| p.is_protected_by_author)
+            .unwrap_or(false)
+        {
+            return Err(CommandError::from(AppError::Other(
+                "This launcher modpack is protected by the author. Mod deletion is blocked."
+                    .to_string(),
+            )));
+        }
+    }
     state.profile_manager.delete_mod(profile_id, mod_id).await?;
     Ok(())
 }

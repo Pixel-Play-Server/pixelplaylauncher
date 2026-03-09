@@ -82,6 +82,11 @@ export interface ProfileSettings {
   extra_game_args: string[];           // Vec<String> -> string[] (Renamed from extra_args)
   custom_jvm_args: string | null;   // Option<String> -> string | null (New)
   quick_play_path: string | null;   // Option<String> -> string | null (Quick Play path)
+  hooks: {
+    pre_launch: string | null;
+    wrapper: string | null;
+    post_exit: string | null;
+  };
 }
 
 interface ModSourceBase {
@@ -175,6 +180,7 @@ export interface pixelplayInformation {
 export interface ModPackInfo {
   source: ModPackSource;
   file_hash?: string | null;
+  is_protected_by_author?: boolean;
 }
 
 export interface CustomModInfo {

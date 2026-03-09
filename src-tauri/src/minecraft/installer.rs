@@ -793,8 +793,19 @@ pub async fn install_minecraft_version(
     // Ensure mods folder exists for all loaders before launch/sync
     async_fs::create_dir_all(&profile_mods_path).await?;
 
+    let is_author_protected_pack = profile
+        .selected_pixelplay_pack_id
+        .as_ref()
+        .and_then(|pack_id| {
+            loaded_pixelplay_config
+                .as_ref()
+                .and_then(|cfg| cfg.packs.get(pack_id))
+        })
+        .map(|pack| pack.is_protected_by_author)
+        .unwrap_or(false);
+
     // Pass the resolved target_mods list and the specific mods path to the sync function
-    if modloader_enum == ModLoader::Fabric {
+    if modloader_enum == ModLoader::Fabric && !is_author_protected_pack {
         info!(
             "Skipping mods folder sync for Fabric (using addMods meta file instead)."
         );
@@ -837,7 +848,14 @@ pub async fn install_minecraft_version(
 
     // --- Execute pre-launch hooks ---
     let launcher_config = state.config_manager.get_config().await;
-    if let Some(hook) = &launcher_config.hooks.pre_launch {
+    let effective_pre_launch_hook = profile
+        .settings
+        .hooks
+        .pre_launch
+        .clone()
+        .or(launcher_config.hooks.pre_launch.clone());
+
+    if let Some(hook) = &effective_pre_launch_hook {
         info!("Executing pre-launch hook: {}", hook);
         let hook_event_id = emit_progress_event(
             &state,
@@ -849,24 +867,31 @@ pub async fn install_minecraft_version(
         )
         .await?;
 
-        let mut cmd = hook.split(' ');
-        if let Some(command) = cmd.next() {
-            let result = std::process::Command::new(command)
-                .args(cmd.collect::<Vec<&str>>())
-                .current_dir(&game_directory)
-                .spawn()
-                .map_err(|e| AppError::Io(e))?
-                .wait()
-                .map_err(|e| AppError::Io(e))?;
+        #[cfg(target_os = "windows")]
+        let result = std::process::Command::new("cmd")
+            .args(["/C", hook])
+            .current_dir(&game_directory)
+            .spawn()
+            .map_err(AppError::Io)?
+            .wait()
+            .map_err(AppError::Io)?;
 
-            if !result.success() {
-                let error_msg = format!(
-                    "Pre-launch hook failed with exit code: {}",
-                    result.code().unwrap_or(-1)
-                );
-                error!("{}", error_msg);
-                return Err(AppError::Other(error_msg));
-            }
+        #[cfg(not(target_os = "windows"))]
+        let result = std::process::Command::new("sh")
+            .args(["-c", hook])
+            .current_dir(&game_directory)
+            .spawn()
+            .map_err(AppError::Io)?
+            .wait()
+            .map_err(AppError::Io)?;
+
+        if !result.success() {
+            let error_msg = format!(
+                "Pre-launch hook failed with exit code: {}",
+                result.code().unwrap_or(-1)
+            );
+            error!("{}", error_msg);
+            return Err(AppError::Other(error_msg));
         }
         info!("Pre-launch hook executed successfully");
     }

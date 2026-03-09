@@ -12,6 +12,7 @@ import { ThemeInitializer } from "./components/ThemeInitializer";
 import { ScrollbarProvider } from "./components/ui/ScrollbarProvider";
 import { GlobalToaster } from "./components/ui/GlobalToaster";
 import { type Event as TauriEvent, listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 import { toast } from "react-hot-toast";
 import {
   type EventPayload as FrontendEventPayload,
@@ -23,7 +24,10 @@ import { TermsOfServiceModal } from "./components/modals/TermsOfServiceModal";
 import { GlobalModalPortal } from "./components/ui/GlobalModalPortal";
 import { useCrashModalStore } from "./store/crash-modal-store";
 import { useThemeStore } from "./store/useThemeStore";
+import { useProfileStore } from "./store/profile-store";
+import { useGlobalModalStore } from "./hooks/useGlobalModal";
 import { refreshNrcDataOnMount } from "./services/nrc-service";
+import * as ProcessService from "./services/process-service";
 import {
   getLauncherConfig,
   setProfileGroupingPreference,
@@ -49,6 +53,7 @@ export function App() {
   const { i18n } = useTranslation();
 
   const activeTab = location.pathname.substring(1) || "play";
+  const { modals } = useGlobalModalStore();
 
   const [currentGroupingCriterion, setCurrentGroupingCriterion] =
     useState<string>("none");
@@ -167,6 +172,57 @@ export function App() {
     };
   }, [navigate]);
 
+  // Handle deep links that already resolve profile+server in backend.
+  useEffect(() => {
+    const unlistenDeepOpen = listen<{ profile?: string | null; server?: string }>(
+      "deep_link_open",
+      async (event) => {
+        try {
+          const server = event.payload?.server;
+          if (!server) {
+            return;
+          }
+
+          const profileStore = useProfileStore.getState();
+          let targetProfileId = event.payload?.profile ?? profileStore.lastPlayedProfileId;
+
+          if (!targetProfileId) {
+            await profileStore.fetchProfiles();
+            const refreshedState = useProfileStore.getState();
+            targetProfileId =
+              refreshedState.lastPlayedProfileId ??
+              refreshedState.selectedProfile?.id ??
+              refreshedState.profiles[0]?.id ??
+              null;
+          }
+
+          if (!targetProfileId) {
+            toast.error("No se encontró un perfil para QuickPlay.");
+            navigate("/profiles");
+            return;
+          }
+
+          const targetProfile =
+            useProfileStore.getState().profiles.find((p) => p.id === targetProfileId) ?? null;
+          if (targetProfile) {
+            useProfileStore.getState().setSelectedProfile(targetProfile);
+          }
+
+          navigate("/play");
+          await ProcessService.launch(targetProfileId, undefined, server);
+          toast.success(`🌐 Conectando a ${server}`);
+        } catch (e) {
+          console.error("Error al manejar deep_link_open:", e);
+          toast.error("No se pudo iniciar QuickPlay.");
+        }
+      },
+    );
+
+    return () => {
+      unlistenDeepOpen.then((f) => f());
+    };
+  }, [navigate]);
+
   useEffect(() => {
     refreshNrcDataOnMount();
   }, []);
@@ -241,6 +297,29 @@ export function App() {
         setCurrentGroupingCriterion("none");
       });
   }, [i18n]);
+
+  useEffect(() => {
+    const tabSegment = location.pathname.split("/").filter(Boolean)[0] ?? "play";
+    const tabLabels: Record<string, string> = {
+      play: "Jugar",
+      profiles: "Perfiles",
+      profilesv2: "Instancias",
+      skins: "Skins",
+      settings: "Ajustes",
+      logs: "Logs",
+    };
+    const baseLabel = tabLabels[tabSegment] ?? "Launcher";
+
+    const modalLabel = modals.length > 0 ? `Modal: ${modals[modals.length - 1].id}` : null;
+    const launcherState = modalLabel ?? baseLabel;
+
+    invoke("set_discord_state", {
+      stateType: "launcher",
+      profileName: launcherState,
+    }).catch((e) => {
+      console.warn("No se pudo actualizar Discord Presence del launcher:", e);
+    });
+  }, [location.pathname, modals]);
 
   const handleProfileGroupingChange = async (newCriterion: string) => {
     setCurrentGroupingCriterion(newCriterion);
