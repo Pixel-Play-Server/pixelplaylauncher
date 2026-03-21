@@ -64,8 +64,7 @@ jobs:
 
       - name: Install AWS CLI
         run: |
-          python3 -m pip install --upgrade pip --break-system-packages
-          python3 -m pip install awscli --break-system-packages
+          brew install awscli
 
       - name: Remove previous builds for this arch/os
         env:
