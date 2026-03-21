@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-upload:
-    runs-on: macos-latest
+    runs-on: macos-14
     env:
       STABLE_BUCKET: pixelplay
       BETA_BUCKET: pixellauncher
@@ -27,6 +27,8 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
 
       - name: Install frontend dependencies
         run: yarn install --frozen-lockfile
@@ -36,7 +38,7 @@ jobs:
 
       - name: Build Tauri app
         run: |
-          npx tauri build
+          yarn tauri build --target x86_64-apple-darwin
         env:
           PERSONAL_GH_PAT: ${{ secrets.PERSONAL_GH_PAT }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -45,7 +47,7 @@ jobs:
       - name: Package artifacts
         run: |
           mkdir -p ci-artifacts
-          cp -r src-tauri/target/release/bundle/macos/* ci-artifacts/
+          cp -r src-tauri/target/x86_64-apple-darwin/release/bundle/macos/* ci-artifacts/
 
       - name: Set upload variables
         id: setvars
