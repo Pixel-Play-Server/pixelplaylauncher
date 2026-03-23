@@ -19,7 +19,8 @@ if [[ "$(id -u)" -eq 0 ]]; then
 fi
 
 cd "$SCRIPT_DIR"
-rm -f PKGBUILD pixelplayclient-launcher-v3 pixelplay-launcher.desktop icon.png ./*.pkg.tar.zst
+# No borrar pixelplay-launcher.desktop ni PKGBUILD.in: son fuentes del repo.
+rm -f PKGBUILD pixelplayclient-launcher-v3 icon.png ./*.pkg.tar.zst
 
 sed "s/^pkgver=.*/pkgver=$VERSION/" PKGBUILD.in > PKGBUILD
 cp "$BIN" ./pixelplayclient-launcher-v3
