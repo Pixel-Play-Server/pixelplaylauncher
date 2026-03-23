@@ -258,19 +258,29 @@ pub async fn check_for_updates(
     };
 
     // Compute the required target label per platform/arch:
-    // windows-x86_64, linux-x86_64, mac-arm, mac-intel
-    let platform_specific_target = if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
-        "windows-x86_64"
-    } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
-        "linux-x86_64"
-    } else if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
-        "mac-arm"
-    } else if cfg!(all(target_os = "macos", target_arch = "x86_64")) {
-        "mac-intel"
-    } else {
-        warn!("Unknown platform/arch for updater target; defaulting to 'unknown'.");
-        "unknown"
-    }.to_string();
+    // windows-x86_64, linux-x86_64, linux-x86_64-arch (solo builds Arch), mac-arm, mac-intel
+    // PIXELPLAY_UPDATER_PLATFORM_TARGET se define en CI solo para el workflow de Arch (build.rs).
+    let platform_specific_target = match option_env!("PIXELPLAY_UPDATER_PLATFORM_TARGET") {
+        Some(t) if !t.is_empty() => {
+            info!("Updater target override (paquete Arch): {}", t);
+            t.to_string()
+        }
+        _ => {
+            let default_label = if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
+                "windows-x86_64"
+            } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+                "linux-x86_64"
+            } else if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+                "mac-arm"
+            } else if cfg!(all(target_os = "macos", target_arch = "x86_64")) {
+                "mac-intel"
+            } else {
+                warn!("Unknown platform/arch for updater target; defaulting to 'unknown'.");
+                "unknown"
+            };
+            default_label.to_string()
+        }
+    };
     info!("Updater target resolved to: {}", platform_specific_target);
 
     // Build final URL: (endpoint)/pixelplay/releases-v2/(target)/{{current_version}}/version.json

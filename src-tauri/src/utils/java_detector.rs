@@ -721,6 +721,24 @@ async fn detect_java_on_linux() -> Result<Vec<JavaInstallation>> {
         }
     }
 
+    // Arch Linux: JVM por defecto en /usr/lib/jvm/default (sin update-alternatives de Debian)
+    if std::path::Path::new("/etc/arch-release").exists() {
+        let java_default = PathBuf::from("/usr/lib/jvm/default/bin/java");
+        if java_default.exists() {
+            match get_java_info(&java_default).await {
+                Ok(mut info) => {
+                    info.source = "Arch Linux (default JVM)".to_string();
+                    installations.push(info);
+                }
+                Err(e) => warn!(
+                    "Failed to get info for Arch default Java at {}: {}",
+                    java_default.display(),
+                    e
+                ),
+            }
+        }
+    }
+
     // Also try to detect using common system commands
     // 1. Try update-alternatives
     match Command::new("update-alternatives")

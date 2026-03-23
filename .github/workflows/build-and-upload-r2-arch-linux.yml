@@ -1,0 +1,144 @@
+# Builds en Arch Linux: dependencias GTK/WebKit nativas (libayatana, webkit2gtk-4.1).
+# Artefactos y updater en releases-v2/linux-x86_64-arch/ (no modifica linux-x86_64).
+name: Build and Upload to R2 (Arch Linux)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  build-and-upload-arch:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    env:
+      PIXELPLAY_UPDATER_PLATFORM_TARGET: linux-x86_64-arch
+      STABLE_BUCKET: pixelplay
+      BETA_BUCKET: pixellauncher
+      STABLE_ENDPOINT: https://3e2952346f3e901e55bcbc7e074595f4.r2.cloudflarestorage.com/pixelplay
+      BETA_ENDPOINT: https://3e2952346f3e901e55bcbc7e074595f4.r2.cloudflarestorage.com/pixellauncher
+      STABLE_PUBLIC_BASE_URL: https://pub-dda9306a363141bc9aece427638fbb4a.r2.dev/pixelplay/releases-v2
+      BETA_PUBLIC_BASE_URL: https://pub-fb468072650f40c9884e13b2bc758f60.r2.dev/pixelplay/releases-v2
+    steps:
+      - name: Install base tools (checkout needs git)
+        run: |
+          pacman -Sy --noconfirm archlinux-keyring
+          pacman -Syu --noconfirm --needed git ca-certificates base-devel
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Arch dependencies (GTK 3 / WebKitGTK 4.1 / tray)
+        run: |
+          pacman -Syu --noconfirm --needed \
+            pkgconf \
+            webkit2gtk-4.1 gtk3 \
+            libappindicator-gtk3 libayatana-appindicator \
+            librsvg patchelf fuse2 xdg-utils file openssl \
+            nodejs npm python python-pip
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Yarn
+        run: npm install -g yarn@1.22.22
+
+      - name: Install frontend dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build frontend
+        run: yarn build
+
+      - name: Build Tauri app (Arch)
+        run: yarn tauri build
+        env:
+          PERSONAL_GH_PAT: ${{ secrets.PERSONAL_GH_PAT }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          ARCH: x86_64
+          PIXELPLAY_UPDATER_PLATFORM_TARGET: linux-x86_64-arch
+
+      - name: Package artifacts
+        run: |
+          mkdir -p ci-artifacts
+          cp -r src-tauri/target/release/bundle/appimage/* ci-artifacts/ || true
+          cp -r src-tauri/target/release/bundle/deb/* ci-artifacts/ || true
+          echo "Packaged files:"
+          ls -lah ci-artifacts/
+
+      - name: Set upload variables
+        id: setvars
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            echo "bucket=${{ env.STABLE_BUCKET }}" >> $GITHUB_OUTPUT
+            echo "endpoint=${{ env.STABLE_ENDPOINT }}" >> $GITHUB_OUTPUT
+            echo "public_base_url=${{ env.STABLE_PUBLIC_BASE_URL }}" >> $GITHUB_OUTPUT
+            echo "type=stable" >> $GITHUB_OUTPUT
+          else
+            echo "bucket=${{ env.BETA_BUCKET }}" >> $GITHUB_OUTPUT
+            echo "endpoint=${{ env.BETA_ENDPOINT }}" >> $GITHUB_OUTPUT
+            echo "public_base_url=${{ env.BETA_PUBLIC_BASE_URL }}" >> $GITHUB_OUTPUT
+            echo "type=beta" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install AWS CLI
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install awscli
+
+      - name: Remove previous Arch builds for this version
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ steps.setvars.outputs.endpoint }}
+          R2_BUCKET: ${{ steps.setvars.outputs.bucket }}
+        run: |
+          OS_NAME="linux-x86_64-arch"
+          VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | cut -d '"' -f4)
+          aws --endpoint-url "$R2_ENDPOINT" s3 rm "s3://$R2_BUCKET/releases-v2/${OS_NAME}/$VERSION/" --recursive || true
+
+      - name: Upload Arch artifacts to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ steps.setvars.outputs.endpoint }}
+          R2_BUCKET: ${{ steps.setvars.outputs.bucket }}
+        run: |
+          OS_NAME="linux-x86_64-arch"
+          VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | cut -d '"' -f4)
+          for file in ci-artifacts/*; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              echo "Uploading: $filename"
+              aws --endpoint-url "$R2_ENDPOINT" s3 cp "$file" "s3://$R2_BUCKET/releases-v2/${OS_NAME}/$VERSION/$filename"
+            fi
+          done
+
+      - name: Generate and upload version JSON (Arch channel)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ steps.setvars.outputs.endpoint }}
+          R2_BUCKET: ${{ steps.setvars.outputs.bucket }}
+          PUBLIC_BASE_URL: ${{ steps.setvars.outputs.public_base_url }}
+        run: |
+          OS_NAME="linux-x86_64-arch"
+          VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | cut -d '"' -f4)
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          SIG_FILE=$(ls -1 ci-artifacts/*.sig 2>/dev/null | head -n 1)
+          if [ -z "$SIG_FILE" ]; then
+            echo "No signature file (*.sig) found in ci-artifacts; updater manifest cannot be generated."
+            exit 1
+          fi
+          SIGNATURE=$(tr -d '\r\n' < "$SIG_FILE")
+          if [ -z "$SIGNATURE" ]; then
+            echo "Signature file is empty: $SIG_FILE"
+            exit 1
+          fi
+          ARTIFACT_NAME=$(basename "$SIG_FILE" .sig)
+          DOWNLOAD_URL="$PUBLIC_BASE_URL/$OS_NAME/$VERSION/$ARTIFACT_NAME"
+          printf '{"version":"%s","notes":"","pub_date":"%s","url":"%s","signature":"%s"}' "$VERSION" "$TIMESTAMP" "$DOWNLOAD_URL" "$SIGNATURE" > version.json
+          aws --endpoint-url "$R2_ENDPOINT" s3 cp version.json "s3://$R2_BUCKET/releases-v2/${OS_NAME}/$VERSION/version.json"
