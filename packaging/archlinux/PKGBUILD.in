@@ -1,0 +1,26 @@
+# Generado en CI: copiar a PKGBUILD y ajustar pkgver con build-pacman.sh
+pkgname=pixelplay-launcher
+pkgver=4.0.0
+pkgrel=1
+pkgdesc='Pixel Play Minecraft Launcher'
+arch=('x86_64')
+url='https://pixelplay.gg'
+license=('GPL3')
+depends=(
+  'webkit2gtk-4.1'
+  'gtk3'
+  'openssl'
+  'hicolor-icon-theme'
+  'libappindicator-gtk3'
+  'librsvg'
+)
+
+# Binario release + metadatos (sin fuentes remotas)
+source=('pixelplayclient-launcher-v3' 'pixelplay-launcher.desktop' 'icon.png')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+package() {
+  install -Dm755 "${srcdir}/pixelplayclient-launcher-v3" "${pkgdir}/usr/bin/pixelplay-launcher"
+  install -Dm644 "${srcdir}/pixelplay-launcher.desktop" "${pkgdir}/usr/share/applications/pixelplay-launcher.desktop"
+  install -Dm644 "${srcdir}/icon.png" "${pkgdir}/usr/share/pixmaps/pixelplay-launcher.png"
+}

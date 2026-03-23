@@ -1,5 +1,5 @@
-# Builds en Arch Linux: dependencias GTK/WebKit nativas (libayatana, webkit2gtk-4.1).
-# Artefactos y updater en releases-v2/linux-x86_64-arch/ (no modifica linux-x86_64).
+# Arch Linux: compila el binario con GTK/WebKit del sistema y empaqueta con pacman (.pkg.tar.zst) + PKGBUILD.
+# No genera .deb ni AppImage. Artefactos: releases-v2/linux-x86_64-arch/
 name: Build and Upload to R2 (Arch Linux)
 
 on:
@@ -30,13 +30,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Arch dependencies (GTK 3 / WebKitGTK 4.1 / tray)
+      - name: Install Arch dependencies (GTK 3 / WebKitGTK 4.1 / makepkg)
         run: |
           pacman -Syu --noconfirm --needed \
-            pkgconf \
+            pkgconf fakeroot \
             webkit2gtk-4.1 gtk3 \
-            libappindicator-gtk3 libayatana-appindicator \
-            librsvg patchelf fuse2 xdg-utils file openssl \
+            libappindicator-gtk3 \
+            librsvg file openssl \
             nodejs npm python python-pip
 
       - name: Setup Rust
@@ -51,21 +51,40 @@ jobs:
       - name: Build frontend
         run: yarn build
 
-      # Solo .deb: linuxdeploy (AppImage) está pensado para glibc/Ubuntu y falla en Arch.
-      - name: Build Tauri app (Arch)
-        run: yarn tauri build --ci --config '{"bundle":{"targets":["deb"]}}'
+      - name: Build Tauri app (Arch, sin bundler Debian/AppImage)
+        run: yarn tauri build --no-bundle --ci
         env:
           PERSONAL_GH_PAT: ${{ secrets.PERSONAL_GH_PAT }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          APPIMAGE_EXTRACT_AND_RUN: "1"
           ARCH: x86_64
           PIXELPLAY_UPDATER_PLATFORM_TARGET: linux-x86_64-arch
+
+      - name: Build pacman package (.pkg.tar.zst)
+        run: |
+          if ! id builder &>/dev/null; then
+            useradd -m -s /bin/bash builder
+          fi
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          runuser -u builder -- env HOME=/home/builder bash "$GITHUB_WORKSPACE/packaging/archlinux/build-pacman.sh"
+
+      - name: Sign package for updater
+        run: |
+          PKG=$(ls packaging/archlinux/*.pkg.tar.zst | head -1)
+          yarn tauri signer sign -k "$TAURI_SIGNING_PRIVATE_KEY" -p "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" "$PKG"
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Package artifacts
         run: |
           mkdir -p ci-artifacts
-          cp -r src-tauri/target/release/bundle/deb/* ci-artifacts/
+          shopt -s nullglob
+          cp packaging/archlinux/*.pkg.tar.zst ci-artifacts/
+          # Firma del updater (mismo nombre base + .sig)
+          for f in packaging/archlinux/*.sig; do
+            [[ -f "$f" ]] && cp "$f" ci-artifacts/
+          done
           echo "Packaged files:"
           ls -lah ci-artifacts/
 
