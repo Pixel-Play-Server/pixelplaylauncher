@@ -51,8 +51,9 @@ jobs:
       - name: Build frontend
         run: yarn build
 
+      # Solo .deb: linuxdeploy (AppImage) está pensado para glibc/Ubuntu y falla en Arch.
       - name: Build Tauri app (Arch)
-        run: yarn tauri build
+        run: yarn tauri build --ci --config '{"bundle":{"targets":["deb"]}}'
         env:
           PERSONAL_GH_PAT: ${{ secrets.PERSONAL_GH_PAT }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -64,8 +65,7 @@ jobs:
       - name: Package artifacts
         run: |
           mkdir -p ci-artifacts
-          cp -r src-tauri/target/release/bundle/appimage/* ci-artifacts/ || true
-          cp -r src-tauri/target/release/bundle/deb/* ci-artifacts/ || true
+          cp -r src-tauri/target/release/bundle/deb/* ci-artifacts/
           echo "Packaged files:"
           ls -lah ci-artifacts/
 
