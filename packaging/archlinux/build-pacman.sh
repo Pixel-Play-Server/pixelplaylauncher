@@ -24,7 +24,7 @@ rm -f PKGBUILD pixelplayclient-launcher-v3 icon.png ./*.pkg.tar.zst
 
 sed "s/^pkgver=.*/pkgver=$VERSION/" PKGBUILD.in > PKGBUILD
 cp "$BIN" ./pixelplayclient-launcher-v3
-cp "$SCRIPT_DIR/pixelplay-launcher.desktop" ./
+# pixelplay-launcher.desktop ya está en $SCRIPT_DIR (mismo cwd); no copiar sobre sí mismo.
 ICON_SRC=""
 for f in "$REPO_ROOT/src-tauri/icons/128x128.png" "$REPO_ROOT/src-tauri/icons/32x32.png"; do
   if [[ -f "$f" ]]; then
