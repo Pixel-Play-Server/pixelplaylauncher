@@ -20,6 +20,10 @@ import { useThemeStore } from "../../store/useThemeStore";
 import { useGlobalModal } from "../../hooks/useGlobalModal";
 import { ExportProfileModal } from "../profiles/ExportProfileModal";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
+import type { pixelplayModpacksConfig } from "../../types/pixelplayPacks";
+import { isProfileAuthorProtected } from "../../utils/author-protection";
+import { FeaturedServerBanner } from "../profiles/FeaturedServerBanner";
 
 export function ProfilesTabV2() {
   const {
@@ -29,12 +33,14 @@ export function ProfilesTabV2() {
     fetchProfiles,
   } = useProfileStore();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { confirm, confirmDialog } = useConfirmDialog();
   const { openModal: openWizard } = useProfileWizardStore();
 
   // Global modal system
   const { showModal, hideModal } = useGlobalModal();
-  
+
+  const [packsConfig, setPacksConfig] = useState<pixelplayModpacksConfig | null>(null);
   // Persistent filters from theme store
   const {
     profilesTabActiveGroup,
@@ -60,9 +66,9 @@ export function ProfilesTabV2() {
   const actionButtons: ActionButton[] = [
     {
       id: "import",
-      label: "IMPORT",
+      label: t("profiles.import"),
       icon: "solar:upload-bold",
-      tooltip: "Import profile",
+      tooltip: t("profiles.importTooltip"),
       onClick: () => {
         showModal("profile-import", <ProfileImport
           onClose={() => {
@@ -76,9 +82,9 @@ export function ProfilesTabV2() {
     },
     {
       id: "create",
-      label: "CREATE",
+      label: t("profiles.create"),
       icon: "solar:widget-add-bold",
-      tooltip: "Create new profile",
+      tooltip: t("profiles.createTooltip"),
       onClick: () => {
         // Pass current group as default, but not if it's "all" or "server"
         const defaultGroup = (activeGroup === "all" || activeGroup === "server") ? null : activeGroup;
@@ -123,7 +129,7 @@ export function ProfilesTabV2() {
   // Create groups array with default groups + dynamic groups
   const createGroups = (): GroupTab[] => {
     const defaultGroups: GroupTab[] = [
-      { id: "all", name: "All", count: getFilteredCountForGroup("all") },
+      { id: "all", name: t("profiles.all"), count: getFilteredCountForGroup("all") },
       { id: "server", name: "SERVER", count: getFilteredCountForGroup("server") },
       { id: "modpacks", name: "MODPACKS", count: getFilteredCountForGroup("modpacks") },
     ];
@@ -149,6 +155,21 @@ export function ProfilesTabV2() {
   useEffect(() => {
     fetchProfiles();
   }, [fetchProfiles]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const config = await ProfileService.getpixelplayPacks();
+        if (!cancelled) setPacksConfig(config);
+      } catch {
+        if (!cancelled) setPacksConfig(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Handler functions from ProfilesTab.tsx
   const handleCreateProfile = () => {
@@ -206,6 +227,10 @@ export function ProfilesTabV2() {
 
   const handleOpenFolder = async (profile: Profile) => {
     console.log("[ProfilesTabV2] handleOpenFolder called for:", profile.name);
+    if (isProfileAuthorProtected(profile, packsConfig)) {
+      toast.error(t("profiles.authorProtection.folderBlocked"));
+      return;
+    }
     const openPromise = ProfileService.openProfileFolder(profile.id);
     toast.promise(openPromise, {
       loading: `Opening folder for '${profile.name}'...`,
@@ -373,6 +398,10 @@ export function ProfilesTabV2() {
           <ActionButtons actions={actionButtons} />
         </div>
       </div>
+
+      {(activeGroup === "all" || activeGroup === "server") && (
+        <FeaturedServerBanner />
+      )}
 
       {/* Profile list */}
       <div className={

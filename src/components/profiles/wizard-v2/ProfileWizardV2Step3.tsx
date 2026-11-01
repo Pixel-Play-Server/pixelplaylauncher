@@ -228,12 +228,12 @@ export function ProfileWizardV2Step3({
             await onCreate({
                 name: profileName.trim(),
                 group: profileGroup.trim() || null,
-                minecraftVersion: selectedMinecraftVersion,
+                minecraftVersion: selectedLoader === "horizon" ? "26.3" : selectedMinecraftVersion,
                 loader: selectedLoader,
                 loaderVersion: selectedLoaderVersion,
                 memoryMaxMb: memoryMaxMb,
-                selectedpixelplayPackId: selectedpixelplayPackId,
-                use_shared_minecraft_folder: useSharedMinecraftFolder
+                selectedpixelplayPackId: selectedLoader === "horizon" ? null : selectedpixelplayPackId,
+                use_shared_minecraft_folder: selectedLoader === "horizon" ? false : useSharedMinecraftFolder
             });
         } catch (err) {
             console.error("Failed to create profile:", err);

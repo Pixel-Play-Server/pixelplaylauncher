@@ -40,11 +40,11 @@ export function ProfileImport({
         directory: false,
         filters: [
           {
-            name: "Modpack Files",
-            extensions: ["pixelplaypack", "mrpack", "zip"],
+            name: "Pixel Pack (.ppack)",
+            extensions: ["ppack", "pixelplaypack", "mrpack", "zip"],
           },
         ],
-        title: "Select Modpack to Import",
+        title: "Importar .ppack",
       });
 
       if (selectedPath && typeof selectedPath === "string") {
@@ -127,7 +127,7 @@ export function ProfileImport({
         <div className="space-y-6">
           <div>
             <p className="text-lg text-white/70 mb-6 font-minecraft-ten tracking-wide select-none">
-              Select a file or drag and drop a .mrpack, .pixelplaypack or .zip file into the launcher to import it and create a new profile.
+              Select a file or drag and drop a .ppack, .mrpack or .zip file into the launcher to import it and create a new profile.
             </p>
 
             <div className="mb-6">
@@ -153,7 +153,7 @@ export function ProfileImport({
                       className="w-5 h-5 text-emerald-400"
                     />
                   </div>
-                  <span>.mrpack (Modrinth)</span>
+                  <span>.ppack (Pixel Play)</span>
                 </li>
                 <li className="flex items-center">
                   <div
@@ -167,10 +167,10 @@ export function ProfileImport({
                   >
                     <Icon
                       icon="solar:file-bold"
-                      className="w-5 h-5 text-orange-400"
+                      className="w-5 h-5 text-emerald-400"
                     />
                   </div>
-                  <span>.pixelplaypack (Pixel Play Client)</span>
+                  <span>.mrpack (Modrinth)</span>
                 </li>
                 <li className="flex items-center">
                   <div

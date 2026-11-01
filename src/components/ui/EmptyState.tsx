@@ -16,6 +16,7 @@ interface EmptyStateProps {
   fullHeight?: boolean;
   compact?: boolean;
   onIconClick?: () => void;
+  preserveCase?: boolean;
 }
 
 export function EmptyState({
@@ -27,6 +28,7 @@ export function EmptyState({
   fullHeight = true,
   compact = false,
   onIconClick,
+  preserveCase = false,
 }: EmptyStateProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const iconRef = useRef<HTMLDivElement>(null);
@@ -113,7 +115,10 @@ export function EmptyState({
           <Icon icon={icon} className={compact ? "w-12 h-12" : "w-20 h-20"} />
         </div>        <p
           className={cn(
-            "text-white lowercase text-center mb-2",
+            "text-white text-center mb-2",
+            preserveCase
+              ? "font-minecraft-ten normal-case tracking-wide"
+              : "lowercase",
             compact ? "text-xl" : "text-2xl",
           )}
         >
@@ -123,8 +128,11 @@ export function EmptyState({
         {description && (
           <p
             className={cn(
-              "text-white/70 lowercase text-center max-w-md",
-              compact ? "text-2xl mb-4" : "text-2xl mb-6",
+              "text-white/70 text-center max-w-md",
+              preserveCase
+                ? "font-minecraft-ten normal-case tracking-wide text-base leading-relaxed"
+                : "lowercase",
+              preserveCase ? (compact ? "mb-4" : "mb-6") : compact ? "text-2xl mb-4" : "text-2xl mb-6",
             )}
           >
             {description}

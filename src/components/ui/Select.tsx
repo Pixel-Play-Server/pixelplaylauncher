@@ -130,7 +130,8 @@ export function Select({
   const colors = getVariantColors();
 
   const getBackgroundColor = () => {
-    const baseOpacity = isHovered || isOpen ? "50" : "30";
+    // Hex alpha: ~78–88% so selects aren't see-through on Linux WebKit
+    const baseOpacity = isHovered || isOpen ? "E0" : "C8";
     return `${colors.main}${baseOpacity}`;
   };
 
@@ -180,9 +181,9 @@ export function Select({
       <ThemedSurface
         className={cn("relative w-full", className)}
         aria-disabled={disabled}
+        surfaceRef={containerRef}
       >
         <div
-          ref={containerRef}
           onClick={disabled ? undefined : handleClick}
           className={cn(
             "w-full h-full flex items-center justify-between",
@@ -204,8 +205,8 @@ export function Select({
         <Dropdown
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
-          triggerRef={triggerRef}
-          width={triggerRef.current?.offsetWidth || 300}
+          triggerRef={containerRef}
+          width={containerRef.current?.offsetWidth || 300}
           position={options.length > 6 ? "top" : "bottom"}
         >
           <div className="max-h-60 overflow-y-auto custom-scrollbar">

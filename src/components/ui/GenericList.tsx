@@ -77,7 +77,7 @@ export function GenericList<T>({
     preloadIcons(GENERIC_LIST_DEFAULT_ICONS);
   }, []);
 
-  if (isLoading) {
+  if (isLoading && items.length === 0) {
     if (loadingComponent) {
       return <>{loadingComponent}</>;
     }        if (loadingItemCount && loadingItemCount > 0) {
@@ -96,7 +96,7 @@ export function GenericList<T>({
             style={{ height: '100%' }}
           />
         </div>
-      );    } else if (items.length === 0) {
+      );    } else {
       return (
         <EmptyState
           icon={emptyStateIcon}
@@ -106,19 +106,23 @@ export function GenericList<T>({
         />
       );
     }
-  }  if (error && errorComponent) {
-    return <>{errorComponent(error)}</>;
   }
-  if (error && showEmptyState) {
-    return (
-      <EmptyState
-        icon={emptyStateIcon || GENERIC_LIST_DEFAULT_ICONS[0]}
-        message={emptyStateMessage || ""}
-        description={emptyStateDescription || error}
-        action={emptyStateAction}
-      />
-    );
-  } else if (error) {
+  // Only replace the list with an error empty-state when there is nothing to show.
+  // Enrichment failures (Modrinth hashes, icons, etc.) must not hide local files.
+  if (error && items.length === 0) {
+    if (errorComponent) {
+      return <>{errorComponent(error)}</>;
+    }
+    if (showEmptyState) {
+      return (
+        <EmptyState
+          icon={emptyStateIcon || GENERIC_LIST_DEFAULT_ICONS[0]}
+          message={emptyStateMessage || ""}
+          description={emptyStateDescription || error}
+          action={emptyStateAction}
+        />
+      );
+    }
     return (
       <div
         className="p-3 flex items-center gap-2 mb-4 rounded-lg border"

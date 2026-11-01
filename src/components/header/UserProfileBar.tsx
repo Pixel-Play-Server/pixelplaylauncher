@@ -75,7 +75,9 @@ export function UserProfileBar({ className }: UserProfileBarProps) {
         }}
         onAccountCreated={async (createdId: string) => {
           try {
-            await useMinecraftAuthStore.getState().setActiveAccount(createdId);
+            if (createdId) {
+              await useMinecraftAuthStore.getState().setActiveAccount(createdId);
+            }
             await useMinecraftAuthStore.getState().initializeAccounts();
             hideModal("add-account");
           } catch (err) {
@@ -95,7 +97,7 @@ export function UserProfileBar({ className }: UserProfileBarProps) {
         <div ref={profileButtonRef}>
           <CurrentAccountDisplay
             onClick={toggleAccountDropdown}
-            className="h-10"
+            className="min-h-[52px]"
           />
         </div>
 

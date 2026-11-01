@@ -4,6 +4,7 @@ import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { cn } from "../../lib/utils";
+import { setVisibleInterval } from "../../lib/visible-interval";
 import * as ProcessService from "../../services/process-service";
 import type { ProcessMetadata } from "../../types/processState";
 import { timeAgo } from "../../utils/time-utils";
@@ -49,13 +50,7 @@ export function RunningInstancesIndicator({
   }, [isLoading]);
 
   useEffect(() => {
-    fetchProcesses();
-
-    const intervalId = setInterval(fetchProcesses, 5000);
-
-    return () => {
-      clearInterval(intervalId);
-    };
+    return setVisibleInterval(fetchProcesses, 5000, { immediate: true });
   }, [fetchProcesses]);
 
   const handleToggleDropdown = () => {

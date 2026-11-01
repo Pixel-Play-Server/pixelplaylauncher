@@ -2,6 +2,7 @@
 
 import type { Profile } from "../../../types/profile";
 import { Checkbox } from "../../ui/Checkbox";
+import { useTranslation } from "react-i18next";
 // import { Label } from "../../ui/Label"; // No longer needed for this specific checkbox
 
 interface DesignerSettingsTabProps {
@@ -13,6 +14,7 @@ export function DesignerSettingsTab({
   editedProfile,
   updateProfile,
 }: DesignerSettingsTabProps) {
+  const { t } = useTranslation();
   
   const handleKeepLocalAssetsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     updateProfile({
@@ -29,13 +31,13 @@ export function DesignerSettingsTab({
     <div className="space-y-4 pt-2">
       <div>
         <h3 className="text-3xl font-minecraft text-white mb-3 lowercase">
-          Asset Management
+          {t("profile.assetManagement")}
         </h3>
         <div className="p-0">
           <div className="flex items-center space-x-3 mb-2">
             <Checkbox
               id="keepLocalAssetsDesigner"
-              label="Keep Local Assets"
+              label={t("profile.keepLocalAssets")}
               checked={
                 editedProfile.pixelplay_information?.keep_local_assets || false
               }
@@ -45,8 +47,7 @@ export function DesignerSettingsTab({
             />
           </div>
           <p className="text-xs text-white/70 font-minecraft-ten tracking-wide select-none pl-1">
-            If checked, edited assets (wings, pixelplay.jsons, etc.) will not be 
-            overwritten upon relaunch.
+            {t("profile.keepLocalAssetsDescription")}
           </p>
         </div>
       </div>

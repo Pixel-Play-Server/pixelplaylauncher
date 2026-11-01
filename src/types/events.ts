@@ -26,6 +26,7 @@ export enum EventType {
   TriggerProfileUpdate = "trigger_profile_update",
   MinecraftProcessExited = "minecraft_process_exited",
   Error = "error",
+  VCRedistRequired = "vcredist_required",
   LaunchSuccessful = "launch_successful",
   CrashReportContentAvailable = "crash_report_content_available",
   MigrationStarted = "migration_started",
@@ -46,9 +47,12 @@ export interface MinecraftProcessExitedPayload {
   profile_id: string;
   process_id: string;
   exit_code: number | null;
+  exit_hint?: string;
   success: boolean;
+  stopped?: boolean;
   process_metadata: ProcessMetadata | null;
   crash_report_content?: string;
+  latest_log_content?: string;
 }
 
 export interface CrashReportContentAvailablePayload {

@@ -6,6 +6,11 @@ import { useThemeStore } from "../../store/useThemeStore";
 import { useMinecraftAuthStore } from "../../store/minecraft-auth-store";
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
+import { PlayerHeadshot } from "./PlayerHeadshot";
+import { RankTag } from "./RankTag";
+import { useTranslation } from "react-i18next";
+import { rankInfo, presenceInfo } from "../../lib/pixel-rank";
+import { usePresenceStore } from "../../store/presence-store";
 
 interface CurrentAccountDisplayProps {
   onClick?: () => void;
@@ -20,8 +25,10 @@ export function CurrentAccountDisplay({
   compact = false,
   variant = "flat",
 }: CurrentAccountDisplayProps) {
+  const { t } = useTranslation();
   const { activeAccount } = useMinecraftAuthStore();
   const accentColor = useThemeStore((state) => state.accentColor);
+  const presenceStatus = usePresenceStore((s) => s.status);
   const buttonRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -153,7 +160,7 @@ export function CurrentAccountDisplay({
 
         <div className="flex items-center gap-1 min-w-0">
           <span className="text-xl text-white font-minecraft lowercase">
-            Add Account
+            {t("accounts.addAccount")}
           </span>
         </div>
 
@@ -165,20 +172,26 @@ export function CurrentAccountDisplay({
     );
   }
 
-  const avatarUrl = activeAccount.id
-    ? `https://crafatar.com/avatars/${activeAccount.id}?overlay&size=28`
-    : null;
-
   const username =
-    activeAccount.minecraft_username || activeAccount.username || "Unknown";
+    activeAccount.minecraft_username || activeAccount.username || t("accounts.unknown");
+  const info = rankInfo(
+    activeAccount.rank,
+    activeAccount.pixel_account,
+    activeAccount.rank_label,
+    activeAccount.rank_color,
+  );
+  const borderColor = info?.color || accentColor.value;
+  const status = activeAccount.pixel_account
+    ? presenceInfo(presenceStatus)
+    : null;
 
   return (
     <div
       ref={buttonRef}
       className={cn(
-        "font-minecraft relative overflow-hidden backdrop-blur-md transition-all duration-200",
+        "font-minecraft relative overflow-visible backdrop-blur-md transition-all duration-200",
         "rounded-md text-white tracking-wider",
-        "flex items-center gap-3 px-4 py-1",
+        "flex items-center gap-3 px-3 py-1.5",
         "text-shadow-sm",
         getBorderClasses(),
         variant !== "flat" &&
@@ -198,7 +211,11 @@ export function CurrentAccountDisplay({
       style={{
         backgroundColor: `${accentColor.value}30`,
         borderColor: `${accentColor.value}80`,
-        borderBottomColor: getBorderBottomColor(),
+        borderBottomColor: variant === "flat"
+          ? isHovered
+            ? accentColor.hoverValue
+            : `${accentColor.value}cc`
+          : accentColor.value,
         boxShadow: getBoxShadow(),
         filter: isHovered ? "brightness(1.1)" : "brightness(1)",
       }}
@@ -207,9 +224,7 @@ export function CurrentAccountDisplay({
         <span
           className="absolute inset-x-0 top-0 h-[2px] rounded-t-sm"
           style={{
-            backgroundColor: isHovered
-              ? accentColor.hoverValue
-              : `${accentColor.value}80`,
+            backgroundColor: isHovered ? accentColor.hoverValue : `${accentColor.value}80`,
           }}
         />
       )}
@@ -219,40 +234,47 @@ export function CurrentAccountDisplay({
       <div
         className="relative w-7 h-7 overflow-hidden border-2 rounded-sm flex-shrink-0 flex items-center justify-center"
         style={{
-          borderColor: `${accentColor.value}60`,
+          borderColor: `${accentColor.value}90`,
           backgroundColor: `${accentColor.value}20`,
         }}
       >
-        {avatarUrl ? (
-          <img
-            src={avatarUrl || "/placeholder.svg"}
-            alt={`${username}'s avatar`}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = "none";
-              const fallback = target.nextElementSibling as HTMLElement;
-              if (fallback) fallback.style.display = "flex";
-            }}
+        <PlayerHeadshot
+          playerName={username}
+          size={28}
+          alt={t("accounts.avatarAlt", { name: username })}
+        />
+        {status && (
+          <span
+            className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-black"
+            style={{ backgroundColor: status.color }}
           />
-        ) : null}
-        <span
-          className={`absolute inset-0 flex items-center justify-center text-white font-minecraft text-xs ${
-            avatarUrl ? "hidden" : ""
-          }`}
-        >
-          {username.charAt(0).toUpperCase()}
-        </span>
+        )}
       </div>
 
       {!compact && (
-        <div className="flex flex-col min-w-0">
-          <span
-            className="text-2xl text-white font-minecraft uppercase truncate"
-            title={username}
-          >
-            {username}
-          </span>
+        <div className="flex flex-col justify-center min-w-0 gap-0.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className="text-xl text-white font-minecraft uppercase truncate leading-none"
+              title={username}
+            >
+              {username}
+            </span>
+            <RankTag
+              rank={activeAccount.rank}
+              pixelAccount={activeAccount.pixel_account}
+              rankLabel={activeAccount.rank_label}
+              rankColor={activeAccount.rank_color}
+            />
+          </div>
+          {status && (
+            <span
+              className="text-[10px] font-minecraft-ten uppercase tracking-wide leading-none"
+              style={{ color: status.color }}
+            >
+              {t(`friends.status.${status.key}`)}
+            </span>
+          )}
         </div>
       )}
 

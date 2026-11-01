@@ -2,6 +2,7 @@
 
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/buttons/Button";
+import { useTranslation } from "react-i18next";
 
 interface GroupMigrationModalProps {
   isOpen: boolean;
@@ -16,47 +17,25 @@ export function GroupMigrationModal({
   onClose,
   onLaunch,
   onMigrate,
-  profileId
 }: GroupMigrationModalProps) {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
-  const handleLaunch = () => {
-    onLaunch();
-  };
-
-  const handleMigrate = () => {
-    if (onMigrate) {
-      onMigrate();
-    }
-  };
-
   return (
-    <Modal
-      title="group update detected"
-      onClose={onClose}
-      width="md"
-    >
+    <Modal title={t("migration.title")} onClose={onClose} width="md">
       <div className="p-6">
         <p className="text-white/80 mb-6 text-center font-minecraft-ten">
-          oh, it seems like something changed in your group. would you like to copy over your old files?
+          {t("migration.description")}
         </p>
 
         <div className="flex gap-4 justify-center mt-8">
           {onMigrate && (
-            <Button
-              onClick={handleMigrate}
-              variant="default"
-              size="md"
-            >
-              copy files
+            <Button onClick={onMigrate} variant="default" size="md">
+              {t("migration.copyFiles")}
             </Button>
           )}
-          <Button
-            onClick={handleLaunch}
-            variant="flat-secondary"
-            size="md"
-          >
-            skip & launch
+          <Button onClick={onLaunch} variant="flat-secondary" size="md">
+            {t("migration.skipLaunch")}
           </Button>
         </div>
       </div>

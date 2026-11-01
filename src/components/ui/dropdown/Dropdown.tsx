@@ -262,10 +262,10 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
         }}
         role={role}
         className={cn(
-          "fixed font-minecraft backdrop-blur-md z-50 overflow-hidden",
+          "fixed font-minecraft z-[300] overflow-hidden pp-dropdown-panel",
           radiusClass,
           "text-white transition-all duration-200",
-          "border-2 border-b-4 shadow-[0_8px_0_rgba(0,0,0,0.3),0_10px_15px_rgba(0,0,0,0.35)]",
+          "border-2 border-b-4",
           animationState === "entering" && animationClasses.entering,
           animationState === "entered" && animationClasses.entered,
           animationState === "exiting" && animationClasses.exiting,
@@ -275,15 +275,24 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
           top: `${dropdownTop}px`,
           left: `${dropdownLeft}px`,
           width: `${width}px`,
-          backgroundColor: `${colors.main}15`,
-          borderColor: `${colors.main}40`,
+          // Near-opaque panel — WebKit/Wails often skips backdrop-filter,
+          // so translucent menus were showing page text through them.
+          backgroundColor: "rgba(10, 12, 16, 0.97)",
+          borderColor: `${colors.main}70`,
           borderBottomColor: colors.dark,
-          boxShadow: `0 8px 0 rgba(0,0,0,0.3), 0 10px 15px rgba(0,0,0,0.35), inset 0 1px 0 ${colors.light}20, inset 0 0 0 1px ${colors.main}10`,
+          boxShadow: `0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 ${colors.light}35`,
+          backdropFilter: "blur(20px) saturate(160%)",
+          WebkitBackdropFilter: "blur(20px) saturate(160%)",
           ...createRadiusStyle(borderRadius),
         }}
         {...accessibilityProps}
       >
-        <div className="absolute inset-0 opacity-20 bg-gradient-radial from-white/20 via-transparent to-transparent pointer-events-none" />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `linear-gradient(160deg, ${colors.main}28 0%, transparent 55%)`,
+          }}
+        />
         <div className="relative z-10">{children}</div>
       </div>,
       document.body,

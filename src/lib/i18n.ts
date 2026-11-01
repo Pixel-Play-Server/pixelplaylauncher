@@ -21,6 +21,9 @@ i18n
   .init({
     resources,
     fallbackLng: 'es',
+    supportedLngs: ['es', 'en'],
+    nonExplicitSupportedLngs: true,
+    load: 'languageOnly',
     debug: false,
 
     detection: {

@@ -105,7 +105,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
       return "rgba(107, 114, 128, 0.3)";
     }
 
-    return `${colors.main}30`;
+    return "rgba(10, 12, 14, 0.88)";
   };
 
   const getBorderColor = () => {

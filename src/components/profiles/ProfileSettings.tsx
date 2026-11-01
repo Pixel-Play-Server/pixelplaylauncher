@@ -19,6 +19,7 @@ import { toast } from "react-hot-toast";
 import { useFlags } from 'flagsmith/react';
 import { DesignerSettingsTab } from './settings/DesignerSettingsTab';
 import { cn } from "../../lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface ProfileSettingsProps {
   profile: Profile;
@@ -35,6 +36,7 @@ type SettingsTab =
 const DESIGNER_FEATURE_FLAG_NAME = "show_keep_local_assets";
 
 export function ProfileSettings({ profile, onClose }: ProfileSettingsProps) {
+  const { t } = useTranslation();
   const { updateProfile, deleteProfile } = useProfileStore();
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [editedProfile, setEditedProfile] = useState<Profile>({ ...profile });
@@ -170,16 +172,16 @@ export function ProfileSettings({ profile, onClose }: ProfileSettingsProps) {
   };
 
   const baseTabConfig = [
-    { id: "general", label: "General", icon: "solar:settings-bold" },
-    { id: "installation", label: "Installation", icon: "solar:download-bold" },
-    { id: "java", label: "JAVA & Memory", icon: "solar:code-bold" },
-    { id: "window", label: "Window", icon: "solar:widget-bold" },
+    { id: "general", label: t("settings.general"), icon: "solar:settings-bold" },
+    { id: "installation", label: t("profile.installation"), icon: "solar:download-bold" },
+    { id: "java", label: t("profile.javaMemory"), icon: "solar:code-bold" },
+    { id: "window", label: t("profile.window"), icon: "solar:widget-bold" },
   ];
 
   const tabConfig = showDesignerTab
     ? [
         ...baseTabConfig,
-        { id: "designer", label: "Designer", icon: "solar:palette-bold" },
+        { id: "designer", label: t("profile.designer"), icon: "solar:palette-bold" },
       ]
     : baseTabConfig;
 
@@ -251,7 +253,7 @@ export function ProfileSettings({ profile, onClose }: ProfileSettingsProps) {
         size="md"
         className="text-2xl"
       >
-        cancel
+        {t("common.cancel")}
       </Button>
       <Button
         variant="default"
@@ -266,10 +268,10 @@ export function ProfileSettings({ profile, onClose }: ProfileSettingsProps) {
               icon="solar:refresh-bold"
               className="w-6 h-6 animate-spin text-white"
             />
-            <span>saving...</span>
+            <span>{t("profile.saving")}</span>
           </div>
         ) : (
-          "save changes"
+          t("profile.saveChanges")
         )}
       </Button>
     </div>
@@ -293,7 +295,7 @@ export function ProfileSettings({ profile, onClose }: ProfileSettingsProps) {
 
   return (
     <Modal
-      title={`profile settings: ${profile.name}`}
+      title={t("profile.settingsTitle", { name: profile.name })}
       onClose={onClose}
       width="xl"
       footer={renderFooter()}

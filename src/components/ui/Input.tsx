@@ -149,7 +149,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             className,
           )}
           style={{
-            backgroundColor: `${accentColor.value}${isHovered || isFocused ? "50" : "30"}`,
+            backgroundColor: isHovered || isFocused
+              ? "rgba(14, 16, 18, 0.94)"
+              : "rgba(8, 10, 12, 0.92)",
             borderColor: error
               ? "rgba(239, 68, 68, 0.6)"
               : `${accentColor.value}${isHovered || isFocused ? "90" : "80"}`,

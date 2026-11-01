@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef } from 'react';
-import * as skinview3d from 'skinview3d';
-import { cn } from '../../lib/utils';
+import React, { useEffect, useRef } from "react";
+import * as skinview3d from "skinview3d";
+import { cn } from "../../lib/utils";
 
 interface SkinView3DWrapperProps {
   skinUrl?: string | null;
   capeUrl?: string | null;
-  skinVariant?: 'classic' | 'slim';
+  skinVariant?: "classic" | "slim";
   className?: string;
   width?: number;
   height?: number;
@@ -17,20 +17,45 @@ interface SkinView3DWrapperProps {
   onPaintPixel?: (x: any, y: any) => void;
   autoRotateSpeed?: number;
   startFromBack?: boolean;
+  animation?: "idle" | "walk" | "fly";
+  transparent?: boolean;
+  pixelRatio?: number | "match-device";
+  fxaa?: boolean;
 }
 
+export const DEFAULT_STEVE_SKIN_URL = "https://mc-heads.net/skin/Steve";
 
-const DEFAULT_STEVE_SKIN_URL = 'https://api.mineatar.com/skin/Steve';
-
-// Helper function to convert skin variant to skinview3d model
-const getModelType = (variant: 'classic' | 'slim' = 'classic') => {
-  return variant === 'slim' ? 'slim' : 'default';
+const getModelType = (variant: "classic" | "slim" = "classic") => {
+  return variant === "slim" ? "slim" : "default";
 };
+
+async function loadSkinSafe(
+  viewer: skinview3d.SkinViewer,
+  url: string | null | undefined,
+  variant: "classic" | "slim",
+) {
+  if (url === null) {
+    viewer.loadSkin(null);
+    return;
+  }
+  const modelType = getModelType(variant);
+  const candidates = [url, DEFAULT_STEVE_SKIN_URL].filter(
+    (item, index, all): item is string => Boolean(item) && all.indexOf(item) === index,
+  );
+  for (const candidate of candidates) {
+    try {
+      await viewer.loadSkin(candidate, { model: modelType });
+      return;
+    } catch {
+      /* siguiente fallback */
+    }
+  }
+}
 
 export const SkinView3DWrapper: React.FC<SkinView3DWrapperProps> = ({
   skinUrl,
   capeUrl,
-  skinVariant = 'classic',
+  skinVariant = "classic",
   className,
   width: propWidth,
   height: propHeight,
@@ -39,19 +64,19 @@ export const SkinView3DWrapper: React.FC<SkinView3DWrapperProps> = ({
   displayAsElytra = false,
   autoRotateSpeed = 1.0,
   startFromBack = false,
+  animation = "idle",
+  transparent = false,
+  pixelRatio = "match-device",
+  fxaa = true,
 }) => {
-  console.log("[SkinView3D] Component props:", {
-    skinUrl: skinUrl ? (typeof skinUrl === 'string' ? skinUrl.substring(0, 50) + "..." : skinUrl) : null,
-    skinVariant,
-    enableAutoRotate,
-    zoom
-  });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const skinViewerRef = useRef<skinview3d.SkinViewer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!canvasRef.current || !containerRef.current) return () => {};
+    if (!canvasRef.current || !containerRef.current) {
+      return () => {};
+    }
 
     const determineWidth = propWidth || containerRef.current.offsetWidth || 300;
     const determineHeight = propHeight || containerRef.current.offsetHeight || 400;
@@ -60,98 +85,93 @@ export const SkinView3DWrapper: React.FC<SkinView3DWrapperProps> = ({
       canvas: canvasRef.current,
       width: determineWidth,
       height: determineHeight,
-      skin: skinUrl === null ? undefined : (skinUrl || DEFAULT_STEVE_SKIN_URL),
+      pixelRatio,
     });
-
+    if (transparent) {
+      viewer.background = null;
+    }
+    if (!fxaa && viewer.fxaaPass) {
+      viewer.fxaaPass.enabled = false;
+    }
     skinViewerRef.current = viewer;
 
-    // Load skin with model based on skinVariant prop
-    const modelType = getModelType(skinVariant);
-    if (skinUrl === null) {
-      viewer.loadSkin(null);
-    } else if (skinUrl) {
-      viewer.loadSkin(skinUrl, { model: modelType });
-    } else if (DEFAULT_STEVE_SKIN_URL) {
-      viewer.loadSkin(DEFAULT_STEVE_SKIN_URL, { model: modelType });
-    }
-
-    if (capeUrl) {
-      viewer.loadCape(capeUrl, displayAsElytra ? { backEquipment: "elytra" } : undefined);
-    }
-    viewer.autoRotate = enableAutoRotate;
-    if (enableAutoRotate && autoRotateSpeed !== 1.0) {
-      viewer.autoRotateSpeed = autoRotateSpeed;
-    }
-    viewer.zoom = zoom;
-   
-    if (startFromBack && viewer.playerObject) {
-        viewer.playerObject.rotation.y = Math.PI; 
-    } else if (!enableAutoRotate && viewer.playerObject) {
-        viewer.playerObject.rotation.y = Math.PI; 
-    }
-
-
-    const resizeObserver = new ResizeObserver(entries => {
-      if (!skinViewerRef.current) return;
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (!skinViewerRef.current) {
+        return;
+      }
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        if (!propWidth) skinViewerRef.current.width = width;
-        if (!propHeight) skinViewerRef.current.height = height;
+        if (!propWidth) {
+          skinViewerRef.current.width = width;
+        }
+        if (!propHeight) {
+          skinViewerRef.current.height = height;
+        }
       }
     });
 
     if (!propWidth || !propHeight) {
-       resizeObserver.observe(containerRef.current);
+      resizeObserver.observe(containerRef.current);
     }
 
     return () => {
       resizeObserver.disconnect();
-      if (skinViewerRef.current) {
-      
-        skinViewerRef.current = null;
-      }
+      viewer.dispose();
+      skinViewerRef.current = null;
     };
-
-  }, [propWidth, propHeight, enableAutoRotate, zoom]);
-
- 
-  useEffect(() => {
-    if (skinViewerRef.current) {
-      const modelType = getModelType(skinVariant);
-      if (skinUrl === null) {
-        skinViewerRef.current.loadSkin(null);
-      } else if (skinUrl) {
-        skinViewerRef.current.loadSkin(skinUrl, { model: modelType });
-      } else {
-        skinViewerRef.current.loadSkin(DEFAULT_STEVE_SKIN_URL, { model: modelType });
-      }
-    }
-  }, [skinUrl]);
-
-  // Separate useEffect for skinVariant changes only
-  useEffect(() => {
-    if (skinViewerRef.current && skinUrl) {
-      const modelType = getModelType(skinVariant);
-      console.log(`[SkinView3D] Changing model to: ${modelType} for variant: ${skinVariant}`);
-      skinViewerRef.current.loadSkin(skinUrl, { model: modelType });
-    }
-  }, [skinVariant]);
+  }, [propWidth, propHeight, transparent, pixelRatio, fxaa]);
 
   useEffect(() => {
-    if (skinViewerRef.current) {
-      if (capeUrl === null) {
-        skinViewerRef.current.loadCape(null);
-      } else if (capeUrl) {
-        skinViewerRef.current.loadCape(capeUrl, displayAsElytra ? { backEquipment: "elytra" } : undefined);
-      }
+    const viewer = skinViewerRef.current;
+    if (!viewer) {
+      return;
     }
+    void loadSkinSafe(viewer, skinUrl, skinVariant);
+  }, [skinUrl, skinVariant]);
+
+  useEffect(() => {
+    const viewer = skinViewerRef.current;
+    if (!viewer) {
+      return;
+    }
+    if (!capeUrl) {
+      viewer.loadCape(null);
+      return;
+    }
+    void viewer
+      .loadCape(capeUrl, displayAsElytra ? { backEquipment: "elytra" } : undefined)
+      .catch(() => viewer.loadCape(null));
   }, [capeUrl, displayAsElytra]);
 
   useEffect(() => {
-    if (skinViewerRef.current) {
-      skinViewerRef.current.autoRotate = enableAutoRotate;
+    const viewer = skinViewerRef.current;
+    if (!viewer) {
+      return;
     }
-  }, [enableAutoRotate]);
+    if (animation === "fly") {
+      viewer.animation = new skinview3d.FlyingAnimation();
+      viewer.animation.speed = 0.7;
+    } else if (animation === "walk") {
+      viewer.animation = new skinview3d.WalkingAnimation();
+      viewer.animation.speed = 0.85;
+    } else {
+      viewer.animation = new skinview3d.IdleAnimation();
+    }
+  }, [animation]);
+
+  useEffect(() => {
+    const viewer = skinViewerRef.current;
+    if (!viewer) {
+      return;
+    }
+    viewer.autoRotate = enableAutoRotate;
+    if (enableAutoRotate) {
+      viewer.autoRotateSpeed = autoRotateSpeed;
+    }
+    if (startFromBack && viewer.playerObject) {
+      viewer.playerObject.rotation.y = Math.PI;
+    }
+  }, [enableAutoRotate, autoRotateSpeed, startFromBack]);
 
   useEffect(() => {
     if (skinViewerRef.current) {
@@ -160,8 +180,20 @@ export const SkinView3DWrapper: React.FC<SkinView3DWrapperProps> = ({
   }, [zoom]);
 
   return (
-    <div ref={containerRef} className={cn("w-full h-full", className)}>
-      <canvas ref={canvasRef} style={{ display: 'block' }} />
+    <div
+      ref={containerRef}
+      className={cn(
+        "flex items-center justify-center",
+        !propWidth || !propHeight ? "h-full w-full" : "",
+        className,
+      )}
+      style={
+        propWidth && propHeight
+          ? { width: propWidth, height: propHeight }
+          : undefined
+      }
+    >
+      <canvas ref={canvasRef} style={{ display: "block", background: "transparent" }} />
     </div>
   );
-}; 
+};

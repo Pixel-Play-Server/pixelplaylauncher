@@ -32,7 +32,7 @@ export function VerticalNavbar({
   items,
   activeItem,
   onItemClick,
-  version = "v0.5.22",
+  version = "v5.0.2",
 }: VerticalNavbarProps) {  const [active, setActive] = useState(activeItem || items[0]?.id);
   const navRef = useRef<HTMLDivElement>(null);
   const [showTooltip, setShowTooltip] = useState<string | null>(null);

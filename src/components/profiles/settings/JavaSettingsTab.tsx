@@ -17,6 +17,7 @@ import { toast } from "react-hot-toast";
 import { cn } from "../../../lib/utils";
 import { getGlobalMemorySettings, setGlobalMemorySettings } from "../../../services/launcher-config-service";
 import type { MemorySettings } from "../../../types/launcherConfig";
+import { useTranslation } from "react-i18next";
 
 interface JavaSettingsTabProps {
   editedProfile: Profile;
@@ -42,6 +43,7 @@ export function JavaSettingsTab({
   tempRamMb,
   setTempRamMb,
 }: JavaSettingsTabProps) {
+  const { t } = useTranslation();
   const [useCustomJava, setUseCustomJava] = useState(
     editedProfile.settings?.use_custom_java_path ?? false,
   );
@@ -362,7 +364,7 @@ export function JavaSettingsTab({
       <div ref={memoryRef} className="space-y-4">
         <div>
           <h3 className="text-3xl font-minecraft text-white mb-3 lowercase">
-            {editedProfile.is_standard_version ? "global memory allocated" : "memory allocated"}
+            {editedProfile.is_standard_version ? t("profile.globalMemoryAllocated") : t("profile.memoryAllocated")}
           </h3>
           <Card
             variant="flat"
@@ -372,7 +374,7 @@ export function JavaSettingsTab({
               <div className="flex items-center justify-center py-8">
                 <Icon icon="solar:refresh-bold" className="w-6 h-6 animate-spin text-white mr-3" />
                 <span className="text-white font-minecraft">
-                  Loading settings...
+                  {t("profile.loadingSettings")}
                 </span>
               </div>
             ) : (
@@ -391,11 +393,10 @@ export function JavaSettingsTab({
                   unit="MB"
                 />
                 <div className="mt-3 text-xs text-white/70 tracking-wide font-minecraft-ten">
-                  Recommended: {recommendedMaxRam} MB (
-                  {(recommendedMaxRam / 1024).toFixed(1)} GB)
+                  {t("profile.recommendedMemory", { mb: recommendedMaxRam, gb: (recommendedMaxRam / 1024).toFixed(1) })}
                   {editedProfile.is_standard_version && (
                     <div className="mt-1 text-accent font-minecraft-ten">
-                      ⚠ This setting applies to all standard profiles
+                      ⚠ {t("profile.standardProfilesWarning")}
                     </div>
                   )}
                 </div>
@@ -412,7 +413,7 @@ export function JavaSettingsTab({
             <Checkbox
               checked={useCustomJava}
               onChange={(e) => handleCustomJavaToggle(e.target.checked)}
-              label="custom java installation"
+              label={t("profile.customJava")}
               className="text-2xl"
               variant="flat"
             />
@@ -421,11 +422,11 @@ export function JavaSettingsTab({
           {!useCustomJava && (
             <div className="mt-3">
               <div className="text-2xl text-white font-minecraft mb-2 lowercase tracking-wide select-none">
-                using launcher default java
+                {t("profile.usingDefaultJava")}
               </div>
               {/* Consider fetching and displaying the actual default path if available */}
               <div className="text-xs text-white/70 font-minecraft-ten break-all lowercase tracking-wide select-none">
-                The launcher will use its bundled Java or a system-wide default.
+                {t("profile.defaultJavaDescription")}
               </div>
             </div>
           )}
@@ -438,7 +439,7 @@ export function JavaSettingsTab({
                     icon="solar:refresh-bold"
                     className="w-5 h-5 mr-2 animate-spin"
                   />
-                  <span>Detecting Java installations...</span>
+                  <span>{t("profile.detectingJava")}</span>
                 </div>
               )}
 
@@ -447,14 +448,14 @@ export function JavaSettingsTab({
                   htmlFor="custom-java-path-input"
                   className="block text-xs text-white/70 font-minecraft-ten mt-3 mb-2 tracking-wide"
                 >
-                  Manual Java Path (javaw.exe or java executable)
+                  {t("profile.manualJavaPath")}
                 </label>
                 <div className="flex gap-3">
                   <Input
                     id="custom-java-path-input"
                     value={customJavaPathInput}
                     onChange={(e) => handleJavaPathInputChange(e.target.value)}
-                    placeholder="Path to java executable (e.g., .../bin/javaw.exe)"
+                    placeholder={t("profile.javaPathPlaceholder")}
                     className="flex-1 text-2xl py-3"
                     variant="flat"
                   />
@@ -472,7 +473,7 @@ export function JavaSettingsTab({
                     className="text-2xl"
                     aria-label="Browse for Java executable"
                   >
-                    Browse
+                    {t("profile.browse")}
                   </Button>
                 </div>
               </div>
@@ -480,7 +481,7 @@ export function JavaSettingsTab({
               {detectedJavaInstallations.length > 0 && !isDetectingJava && (
                 <div className="space-y-2 pt-2">
                   <h4 className="text-xs text-white/70 font-minecraft-ten mb-2 tracking-wide">
-                    Detected Java Installations (click to use):
+                    {t("profile.detectedJava")}
                   </h4>
                   <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-1 p-2 bg-black/10 rounded-lg">
                     {detectedJavaInstallations.map((java) => (

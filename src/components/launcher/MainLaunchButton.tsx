@@ -13,6 +13,7 @@ import { useThemeStore } from "../../store/useThemeStore";
 import { useVersionSelectionStore } from "../../store/version-selection-store";
 import { useProfileLaunch } from "../../hooks/useProfileLaunch";
 import { useTranslation } from "react-i18next";
+import { formatLaunchStatus } from "../../utils/launch-status";
 
 interface Version {
   id: string;
@@ -133,25 +134,25 @@ export function MainLaunchButton({
   };
 
   const renderLaunchButtonContent = () => {
-    const actionText = isButtonLaunching ? t("launcher.launchCancelled") : t("launcher.launch");
+  const actionText = isButtonLaunching ? t("launcher.stop") : t("launcher.launch");
 
     let statusSubText: string | null | undefined = null;
     let statusColorClass = "opacity-85";
 
-    if (transientSuccessActive && buttonStatusMessage === "STARTING!") {
-      statusSubText = buttonStatusMessage;
+    if (transientSuccessActive) {
+      statusSubText = t("launcher.status.started");
       statusColorClass = "text-green-400";
     } else if (isButtonLaunching) {
-      statusSubText = buttonStatusMessage || t("launcher.launching");
+      statusSubText = formatLaunchStatus(t, buttonStatusMessage);
       statusColorClass =
         buttonStatusMessage
           ? "opacity-90 text-white"
           : "opacity-75";
     } else if (buttonStatusMessage && launchState === LaunchState.ERROR) {
-      statusSubText = buttonStatusMessage;
+      statusSubText = formatLaunchStatus(t, buttonStatusMessage, "launcher.launchFailed");
       statusColorClass = "text-red-400";
     } else if (buttonStatusMessage) {
-      statusSubText = buttonStatusMessage;
+      statusSubText = formatLaunchStatus(t, buttonStatusMessage);
       statusColorClass = "opacity-85";
     }
 

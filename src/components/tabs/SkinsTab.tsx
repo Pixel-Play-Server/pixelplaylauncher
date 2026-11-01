@@ -10,8 +10,6 @@ import type {
 } from "../../types/localSkin";
 import { useMinecraftAuthStore } from "../../store/minecraft-auth-store";
 import { MinecraftSkinService } from "../../services/minecraft-skin-service";
-import { Button } from "../ui/buttons/Button";
-import { IconButton } from "../ui/buttons/IconButton";
 import { Icon } from "@iconify/react";
 import { StatusMessage } from "../ui/StatusMessage";
 import { SkinViewer } from "../launcher/SkinViewer";
@@ -24,6 +22,9 @@ import { SearchWithFilters } from "../ui/SearchWithFilters";
 import { useGlobalModal } from "../../hooks/useGlobalModal";
 import { AddSkinModal } from "../modals/AddSkinModal";
 import { cn } from "../../lib/utils";
+import { GroupTabs } from "../ui/GroupTabs";
+import { CapeBrowser } from "../capes/CapeBrowser";
+import { CurrentAccountSkin } from "../skins/CurrentAccountSkin";
 
 const SkinPreview = memo(
   ({
@@ -90,7 +91,7 @@ const SkinPreview = memo(
           try {
             const payload: GetStarlightSkinRenderPayload = {
               player_name: "skin",
-              render_type: "default",
+              render_type: "walking",
               render_view: "full",
               base64_skin_data: skin.base64_data,
             };
@@ -388,6 +389,8 @@ export function SkinsTab() {
     useState<MinecraftSkin | null>(null);
   const [search, setSearch] = useState<string>("");
   const [currentSkinId, setCurrentSkinId] = useState<string | null>(null);
+  const [section, setSection] = useState<"skins" | "capes">("skins");
+  const [skinReloadToken, setSkinReloadToken] = useState(0);
 
   const debouncedSearch = useDebounce(search, 250);
   const accentColor = useThemeStore((state) => state.accentColor);
@@ -435,7 +438,9 @@ export function SkinsTab() {
       }
     } catch (err) {
       console.error("Error loading skin data:", err);
-      toast.error(err instanceof Error ? err.message : String(err.message));
+      if (!activeAccount.offline && !activeAccount.pixel_account) {
+        toast.error(err instanceof Error ? err.message : String(err.message));
+      }
     } finally {
       setLoading(false);
     }
@@ -466,22 +471,15 @@ export function SkinsTab() {
   }, [selectedSkinId]);
 
   useEffect(() => {
+    initializeAccounts();
+    loadLocalSkins();
+  }, [initializeAccounts, loadLocalSkins]);
+
+  useEffect(() => {
     if (activeAccount) {
       loadSkinData();
     }
-
-    loadLocalSkins();
-
-    if (!activeAccount && !accountLoading) {
-      initializeAccounts();
-    }
-  }, [
-    activeAccount,
-    loadSkinData,
-    loadLocalSkins,
-    initializeAccounts,
-    accountLoading,
-  ]);
+  }, [activeAccount, loadSkinData]);
 
   const startEditSkin = (
     skin: MinecraftSkin | null,
@@ -613,6 +611,7 @@ export function SkinsTab() {
         `Successfully applied skin: ${skin.name} (${skin.variant} model)`,
       );
       await loadSkinData();
+      setSkinReloadToken((n) => n + 1);
     } catch (err) {
       console.error("Error applying local skin:", err);
       toast.error(err instanceof Error ? err.message : String(err.message));
@@ -643,6 +642,20 @@ export function SkinsTab() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-4 relative">
+      <GroupTabs
+        groups={[
+          { id: "skins", name: "Skins", count: localSkins.length, icon: "solar:user-bold" },
+          { id: "capes", name: "Capas", count: 0, icon: "solar:flag-bold" },
+        ]}
+        activeGroup={section}
+        onGroupChange={(id) => setSection(id === "capes" ? "capes" : "skins")}
+        showAddButton={false}
+      />
+      {section === "capes" ? (
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <CapeBrowser embedded />
+        </div>
+      ) : (
       <div className="flex-1 overflow-y-auto no-scrollbar">
         {/* Search & Filters */}
         <div className="mb-6 pb-4 border-b border-white/10">
@@ -665,11 +678,11 @@ export function SkinsTab() {
 
         {/* Content */}
         <div className="space-y-8">
-        {accountLoading ? (
+        {accountLoading && !activeAccount ? (
           <p className="text-white/70 font-minecraft text-xl text-center py-4">
             Loading account...
           </p>
-        ) : accountError ? (
+        ) : !activeAccount && accountError ? (
           <StatusMessage
             type="error"
             className="font-minecraft text-lg"
@@ -681,6 +694,7 @@ export function SkinsTab() {
           </p>
         ) : (
           <>
+            <CurrentAccountSkin reloadToken={skinReloadToken} />
             <div className="space-y-5 text-center">
               {localSkinsLoading ? (
                 <p className="text-white/70 font-minecraft text-xl text-center py-4">
@@ -727,6 +741,7 @@ export function SkinsTab() {
         </div>
 
       </div>
+      )}
     </div>
   );
 }

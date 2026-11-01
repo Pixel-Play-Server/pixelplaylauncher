@@ -4,7 +4,6 @@ export const navItems = [
   { id: "mods", icon: "pixel:bolt-solid", label: "Mods" },
   { id: "store", icon: "pixel:shop-solid", label: "Store" },
   { id: "skins", icon: "pixel:huggingface", label: "Skins" },
-  { id: "news", icon: "pixel:bell-solid", label: "News" },
   { id: "settings", icon: "pixel:cog-solid", label: "Settings" },
 ];
 
@@ -44,5 +43,5 @@ export const userData = {
 };
 
 export const appConfig = {
-  version: "v0.5.22",
+  version: "v5.0.2",
 };

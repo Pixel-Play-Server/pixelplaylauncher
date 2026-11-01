@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
 
 interface SkinViewerProps {
-  skinUrl: string; // This will now be the direct URL (file:// or http:// or /path)
+  skinUrl: string;
   playerName?: string;
   width?: number;
   height?: number;
@@ -13,27 +13,30 @@ interface SkinViewerProps {
 }
 
 export function SkinViewer({
-  skinUrl, // Directly use this prop
+  skinUrl,
   playerName,
   width = 300,
   height = 400,
   className,
   style,
 }: SkinViewerProps) {
+  const [src, setSrc] = useState(skinUrl);
   const [hasError, setHasError] = useState(false);
 
-  // Reset error state if skinUrl changes, to allow retrying if a new valid URL is provided
   useEffect(() => {
+    setSrc(skinUrl);
     setHasError(false);
   }, [skinUrl]);
 
   const handleError = () => {
-    console.warn(`[SkinViewer] Error loading image from skinUrl: ${skinUrl}`);
+    if (playerName && src && !src.includes("mc-heads.net")) {
+      setSrc(`https://mc-heads.net/body/${encodeURIComponent(playerName)}`);
+      return;
+    }
     setHasError(true);
   };
 
-  if (hasError || !skinUrl) {
-    // Show fallback if error or no skinUrl provided
+  if (hasError || !src) {
     return (
       <div
         className={cn(
@@ -49,7 +52,7 @@ export function SkinViewer({
 
   return (
     <img
-      src={skinUrl}
+      src={src}
       alt={playerName ? `${playerName}'s Skin` : "Minecraft Skin"}
       width={width}
       height={height}

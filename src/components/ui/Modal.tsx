@@ -127,8 +127,9 @@ export function Modal({
           className,
         )}
         style={{
-          backgroundColor: `${accentColor.value}20`,
-          borderColor: `${accentColor.value}80`,
+          backgroundColor: "rgba(8, 10, 12, 0.96)",
+          backgroundImage: `linear-gradient(180deg, ${accentColor.value}26 0%, transparent 42%)`,
+          borderColor: `${accentColor.value}cc`,
           borderBottomColor: accentColor.value,
           boxShadow: getBoxShadow(),
         }}
@@ -144,8 +145,9 @@ export function Modal({
           ref={headerRef}
           className="flex items-center justify-between px-6 py-4 border-b-2 flex-shrink-0"
           style={{
-            borderColor: `${accentColor.value}60`,
-            backgroundColor: `${accentColor.value}30`,
+            borderColor: `${accentColor.value}80`,
+            backgroundColor: "rgba(6, 8, 9, 0.92)",
+            backgroundImage: `linear-gradient(90deg, ${accentColor.value}30, transparent 70%)`,
           }}
         >
           <div className="flex items-start space-x-3">

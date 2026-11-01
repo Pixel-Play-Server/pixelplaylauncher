@@ -18,23 +18,27 @@ import { useProfileLaunch } from "../../hooks/useProfileLaunch.tsx";
 import { Tooltip } from "../ui/Tooltip";
 import UnifiedService from "../../services/unified-service";
 import { useProfileStore } from "../../store/profile-store";
+import { useTranslation } from "react-i18next";
+import { formatLaunchStatus } from "../../utils/launch-status";
+import * as ProfileService from "../../services/profile-service";
+import type { pixelplayModpacksConfig } from "../../types/pixelplayPacks";
+import { isProfileAuthorProtected } from "../../utils/author-protection";
+import { PackVersionMeta } from "./PackVersionMeta";
 
 // Custom JSX component for tooltip content
 function StandardVersionTooltipContent() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-3">
-      {/* Main explanation */}
       <div className="text-left">
         <div className="text-sm leading-relaxed text-white">
-          This version is provided and updated by NRC.
+          {t("profiles.card.nrcProvided")}
         </div>
       </div>
-
-      {/* Tip section */}
       <div className="flex items-start gap-2">
         <Icon icon="solar:lightbulb-bold" className="text-yellow-400 text-base flex-shrink-0" />
         <div className="text-gray-300 text-xs leading-snug italic">
-          <span className="text-yellow-300 font-medium">Tip:</span> Create your own profiles for full customization.
+          <span className="text-yellow-300 font-medium">{t("common.tip")}:</span> {t("profiles.card.nrcTip")}
         </div>
       </div>
     </div>
@@ -61,6 +65,7 @@ export function ProfileCardV2({
   layoutMode = "list",
 }: ProfileCardV2Props) {
   const [isHovered, setIsHovered] = useState(false);
+  const { t } = useTranslation();
   const accentColor = useThemeStore((state) => state.accentColor);
   const { openContextMenuId, setOpenContextMenuId } = useThemeStore();
   
@@ -73,6 +78,8 @@ export function ProfileCardV2({
   // Modpack versions state for conditional rendering
   const [modpackVersions, setModpackVersions] = useState(null);
   const [isLoadingVersions, setIsLoadingVersions] = useState(false);
+  const [packsConfig, setPacksConfig] = useState<pixelplayModpacksConfig | null>(null);
+  const isAuthorProtected = isProfileAuthorProtected(profile, packsConfig);
   
   // Profile settings store
   const { openModal } = useProfileSettingsStore();
@@ -86,11 +93,30 @@ export function ProfileCardV2({
   // Resolved loader version state
   const [resolvedLoaderVersion, setResolvedLoaderVersion] = useState<ResolvedLoaderVersion | null>(null);
 
+  useEffect(() => {
+    if (!profile.selected_pixelplay_pack_id) {
+      setPacksConfig(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const config = await ProfileService.getpixelplayPacks();
+        if (!cancelled) setPacksConfig(config);
+      } catch {
+        if (!cancelled) setPacksConfig(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.selected_pixelplay_pack_id]);
+
   // Settings context menu items
   const contextMenuItems: ContextMenuItem[] = [
     {
       id: "edit",
-      label: "Edit Profile",
+      label: t("profile.editProfile"),
       icon: "solar:settings-bold",
       onClick: (profile) => {
         console.log("Edit Profile clicked for:", profile.name);
@@ -99,7 +125,7 @@ export function ProfileCardV2({
     },
     {
       id: "duplicate",
-      label: "Duplicate",
+      label: t("profile.duplicate"),
       icon: "solar:copy-bold",
       onClick: (profile) => {
         console.log("Duplicate Profile clicked for:", profile.name);
@@ -108,7 +134,7 @@ export function ProfileCardV2({
     },
     {
       id: "export",
-      label: "Export",
+      label: t("common.export"),
       icon: "solar:download-bold",
       onClick: (profile) => {
         showModal(`export-profile-${profile.id}`, (
@@ -120,23 +146,27 @@ export function ProfileCardV2({
         ));
       },
     },
-    {
-      id: "open-folder",
-      label: "Open Folder",
-      icon: "solar:folder-bold",
-      onClick: (profile) => {
-        if (onOpenFolder) {
-          onOpenFolder(profile);
-        } else {
-          toast.success(`📁 Opening folder for ${profile.name}!`);
-          console.log("Opening folder for profile:", profile.name);
-        }
-      },
-    },
+    ...(!isAuthorProtected
+      ? [
+          {
+            id: "open-folder",
+            label: t("profiles.openFolder"),
+            icon: "solar:folder-bold",
+            onClick: (profile: Profile) => {
+              if (onOpenFolder) {
+                onOpenFolder(profile);
+              } else {
+                toast.success(`📁 Opening folder for ${profile.name}!`);
+                console.log("Opening folder for profile:", profile.name);
+              }
+            },
+          } as ContextMenuItem,
+        ]
+      : []),
     // Show modpack versions only if modpack info exists and versions are loaded
     ...(profile.modpack_info?.source && modpackVersions ? [{
       id: "switch_modpack",
-      label: "Modpack Versions",
+      label: t("profile.modpackVersions"),
       icon: "solar:refresh-circle-bold",
       onClick: (profile) => {
         console.log("Switch modpack version for profile:", profile.name);
@@ -168,7 +198,7 @@ export function ProfileCardV2({
     }] : []),
     {
       id: "delete",
-      label: "Delete",
+      label: t("common.delete"),
       icon: "solar:trash-bin-trash-bold",
       destructive: true,
       separator: true, // Trennstrich vor Delete
@@ -266,7 +296,7 @@ export function ProfileCardV2({
 
   // Format last played date
   const formatLastPlayed = (lastPlayed: string | null): string => {
-    if (!lastPlayed) return "Never played";
+    if (!lastPlayed) return t("profiles.card.neverPlayed");
     
     const date = new Date(lastPlayed);
     const now = new Date();
@@ -278,14 +308,14 @@ export function ProfileCardV2({
     const diffInMonths = Math.floor(diffInDays / 30);
     const diffInYears = Math.floor(diffInDays / 365);
     
-    if (diffInMinutes < 1) return "Just now";
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-    if (diffInWeeks < 4) return `${diffInWeeks}w ago`;
-    if (diffInMonths < 12) return `${diffInMonths}mo ago`;
+    if (diffInMinutes < 1) return t("profiles.card.justNow");
+    if (diffInMinutes < 60) return t("profiles.card.minutesAgo", { count: diffInMinutes });
+    if (diffInHours < 24) return t("profiles.card.hoursAgo", { count: diffInHours });
+    if (diffInDays < 7) return t("profiles.card.daysAgo", { count: diffInDays });
+    if (diffInWeeks < 4) return t("profiles.card.weeksAgo", { count: diffInWeeks });
+    if (diffInMonths < 12) return t("profiles.card.monthsAgo", { count: diffInMonths });
     
-    return `${diffInYears}y ago`;
+    return t("profiles.card.yearsAgo", { count: diffInYears });
   };
 
 
@@ -294,10 +324,10 @@ export function ProfileCardV2({
   const actionButtons: ProfileActionButton[] = [
     {
       id: "play",
-      label: isLaunching ? "STOP" : "PLAY",
+      label: isLaunching ? t("profiles.card.stop") : t("profiles.card.play"),
       icon: isLaunching ? "solar:stop-bold" : "solar:play-bold",
       variant: isLaunching ? "destructive" : "primary",
-      tooltip: isLaunching ? "Launch stoppen" : "Minecraft spielen!",
+      tooltip: isLaunching ? t("profiles.card.stopTooltip") : t("profiles.card.playTooltip"),
       onClick: (profile, e) => {
         if (onPlay) {
           onPlay(profile);
@@ -308,10 +338,10 @@ export function ProfileCardV2({
     },
     {
       id: "mods",
-      label: "MODS",
+      label: t("profiles.card.mods"),
       icon: "solar:box-bold",
       variant: "secondary",
-      tooltip: "Mods verwalten",
+      tooltip: t("profiles.card.modsTooltip"),
       onClick: (profile, e) => {
         if (onMods) {
           onMods(profile);
@@ -323,10 +353,10 @@ export function ProfileCardV2({
     },
     {
       id: "settings",
-      label: "SETTINGS",
+      label: t("profiles.card.settings"),
       icon: "solar:settings-bold",
       variant: "icon-only",
-      tooltip: "Profile Options",
+      tooltip: t("profiles.card.optionsTooltip"),
              onClick: (profile, e) => {
          e.preventDefault();
          e.stopPropagation();
@@ -366,7 +396,7 @@ export function ProfileCardV2({
     
     return (
       <div
-        className={`relative flex flex-col ${gap} ${padding} rounded-lg bg-black/20 border border-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer`}
+  className={`relative flex flex-col ${gap} ${padding} rounded-lg bg-black/35 border border-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onClick={(e) => {
@@ -442,7 +472,7 @@ export function ProfileCardV2({
                }
              }}
             className={`${isCompact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center bg-black/30 hover:bg-black/50 text-white/70 hover:text-white border border-white/10 hover:border-white/20 rounded transition-all duration-200`}
-            title="Profile Options"
+            title={t("profiles.card.optionsTooltip")}
             data-action="settings"
           >
             <Icon icon="solar:settings-bold" className={isCompact ? 'w-3 h-3' : 'w-4 h-4'} />
@@ -461,7 +491,7 @@ export function ProfileCardV2({
               }
             }}
             className={`${isCompact ? 'w-6 h-6' : 'w-8 h-8'} flex items-center justify-center bg-black/30 hover:bg-black/50 text-white/70 hover:text-white border border-white/10 hover:border-white/20 rounded transition-all duration-200`}
-            title="Manage Mods"
+            title={t("profiles.card.modsTooltip")}
           >
             <Icon icon="solar:box-bold" className={isCompact ? 'w-3 h-3' : 'w-4 h-4'} />
           </button>
@@ -504,7 +534,7 @@ export function ProfileCardV2({
             </h3>
             {isLaunching ? (
               <div className="text-white/60 text-xs font-minecraft-ten opacity-70 whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
-                {statusMessage || "Starting..."}
+                {formatLaunchStatus(t, statusMessage)}
               </div>
             ) : (
               isCompact ? (
@@ -519,6 +549,7 @@ export function ProfileCardV2({
                      />
                      <span>{profile.game_version}</span>
                    </div>
+                   <PackVersionMeta packId={profile.selected_pixelplay_pack_id} size="sm" />
                    
                    <div className="w-px h-2.5 bg-white/30"></div>
                    
@@ -550,12 +581,13 @@ export function ProfileCardV2({
                        className="w-3 h-3 object-contain"
                      />
                      <span>
-                       {profile.loader === "vanilla" 
-                         ? "Vanilla" 
-                         : `${resolvedLoaderVersion?.version || profile.loader_version || "Unknown"}`
+                       {profile.loader === "vanilla"
+                         ? "Vanilla"
+                         : `${resolvedLoaderVersion?.version || profile.loader_version || "—"}`
                        }
                      </span>
                    </div>
+                   <PackVersionMeta packId={profile.selected_pixelplay_pack_id} size="sm" />
                    
                    <div className="w-px h-3 bg-white/30"></div>
                    
@@ -588,7 +620,7 @@ export function ProfileCardV2({
   // List layout (original layout)
   return (
     <div
-      className="relative flex items-center gap-4 p-3 rounded-lg bg-black/20 border border-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer"
+      className="relative flex items-center gap-4 p-3 rounded-lg bg-black/35 border border-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={(e) => {
@@ -645,7 +677,7 @@ export function ProfileCardV2({
         
         {isLaunching ? (
           <div className="text-white/60 text-xs font-minecraft-ten opacity-70 whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
-            {statusMessage || "Starting..."}
+            {formatLaunchStatus(t, statusMessage)}
           </div>
         ) : (
           <div className="flex items-center gap-2 text-xs font-minecraft-ten">
@@ -669,12 +701,13 @@ export function ProfileCardV2({
               className="w-3 h-3 object-contain"
             />
             <span>
-              {profile.loader === "vanilla" 
-                ? "Vanilla" 
-                : `${resolvedLoaderVersion?.version || profile.loader_version || "Unknown"}`
+              {profile.loader === "vanilla"
+                ? "Vanilla"
+                : `${resolvedLoaderVersion?.version || profile.loader_version || "—"}`
               }
             </span>
           </div>
+          <PackVersionMeta packId={profile.selected_pixelplay_pack_id} size="sm" />
           
           <div className="w-px h-3 bg-white/30"></div>
           

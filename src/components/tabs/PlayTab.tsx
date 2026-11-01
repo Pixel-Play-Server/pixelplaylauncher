@@ -13,8 +13,6 @@ import {
   useBackgroundEffectStore,
 } from "../../store/background-effect-store";
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
-import AccountAddChoiceModal from "../account/AccountAddChoiceModal";
 
 export function PlayTab() {
   const { t } = useTranslation();
@@ -62,7 +60,7 @@ export function PlayTab() {
   return (
     <>
       <div className="flex h-full relative">
-      <div className="flex-1 flex flex-col items-center justify-center p-8 relative z-15">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 relative z-15 overflow-hidden">
         {currentEffect === BACKGROUND_EFFECTS.RETRO_GRID && (
           <RetroGridEffect
             renderMode="both"
@@ -76,7 +74,7 @@ export function PlayTab() {
           className="absolute top-6 left-6 z-10"
         /> */}
 
-        <div className="relative z-10">
+        <div className="relative z-10 w-full flex flex-col items-center justify-center my-auto">
           {/* PlayTab does not show Add Account button per user request */}
           {profilesError && !loading && (
             <ErrorMessage

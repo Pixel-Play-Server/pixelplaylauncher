@@ -28,7 +28,9 @@ import { useMinecraftAuthStore } from "../../store/minecraft-auth-store";
 import gsap from "gsap";
 import { IconButton } from "../ui/buttons/IconButton";
 import { useCapeFavoritesStore } from "../../store/useCapeFavoritesStore";
+import { accountSkinUrl, cosmeticCapeUrl, isVanillaCapeItem } from "../../lib/pixelplayCdn";
 import { useGlobalModal } from "../../hooks/useGlobalModal";
+import { useAccountSkinVariant } from "../../hooks/useAccountSkinVariant";
 
 
 // Removed ListComponent - using native grid layout instead
@@ -67,12 +69,11 @@ function CapeItemDisplay({
   const handleCapeClick = useCallback(() => {
     if (isCurrentlyEquipping || !showModal) return;
 
-    const userSkinUrl = activeAccount?.id
-      ? `https://crafatar.com/skins/${activeAccount.id}`
-      : undefined;
+    const itemIsVanilla = isVanilla || isVanillaCapeItem(cape);
+    const userSkinUrl = accountSkinUrl(activeAccount?.id, activeAccount?.username) || undefined;
 
-    const capeId = isVanilla ? (cape as VanillaCape).id : (cape as CosmeticCape)._id;
-    const capeUrl = isVanilla ? (cape as VanillaCape).url : `https://cdn.norisk.gg/capes/prod/${capeId}.png`;
+    const capeId = itemIsVanilla ? (cape as VanillaCape).id : (cape as CosmeticCape)._id;
+    const capeUrl = itemIsVanilla ? (cape as VanillaCape).url : cosmeticCapeUrl(capeId);
 
     showModal(`cape-preview-${capeId}`, (
       <Modal
@@ -83,7 +84,7 @@ function CapeItemDisplay({
       >
         <Cape3DPreviewWithToggle
           skinUrl={userSkinUrl}
-          capeUrl={isVanilla ? capeUrl : undefined}
+          capeUrl={capeUrl}
           capeId={capeId}
           isEquipped={false}
           onEquipCape={() => {
@@ -98,16 +99,19 @@ function CapeItemDisplay({
   const [creatorLoading, setCreatorLoading] = useState<boolean>(false);
   const [isHovered, setIsHovered] = useState(false);
   const accentColor = useThemeStore((state) => state.accentColor);
+  const itemIsVanilla = isVanilla || isVanillaCapeItem(cape);
+  const cosmeticCape = cape as CosmeticCape;
+  const vanillaCape = cape as VanillaCape;
 
-  // Only use favorites for pixelplay capes
-  const isFavorite = !isVanilla ? useCapeFavoritesStore((s) => s.isFavorite((cape as CosmeticCape)._id)) : false;
+  const isFavorite = useCapeFavoritesStore((s) =>
+    itemIsVanilla ? false : s.isFavorite(cosmeticCape._id),
+  );
   const toggleFavoriteOptimistic = useCapeFavoritesStore((s) => s.toggleFavoriteOptimistic);
 
   useEffect(() => {
-    if (isVanilla) return; // Vanilla capes don't have creators
+    if (itemIsVanilla || cosmeticCape.name) return;
 
     let isMounted = true;
-    const cosmeticCape = cape as CosmeticCape;
     if (cosmeticCape.firstSeen) {
       if (creatorNameCache.has(cosmeticCape.firstSeen)) {
         setCreatorName(creatorNameCache.get(cosmeticCape.firstSeen)!);
@@ -165,7 +169,7 @@ function CapeItemDisplay({
       {/* Action buttons - top right */}
       <div className={`absolute top-3 right-3 z-20 flex flex-col gap-1`}>
         {/* Favorite button (only for pixelplay capes) */}
-        {!isVanilla && (
+        {!itemIsVanilla && (
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -185,7 +189,7 @@ function CapeItemDisplay({
         )}
 
         {/* Delete button (only if canDelete and not vanilla) */}
-        {canDelete && onDeleteCapeClick && !isVanilla && (
+        {canDelete && onDeleteCapeClick && !itemIsVanilla && (
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -216,7 +220,7 @@ function CapeItemDisplay({
             borderColor: isEquipped ? accentColor.value : (isHovered ? `${accentColor.value}60` : 'transparent'),
           }}
         >
-          {isVanilla ? (
+          {itemIsVanilla ? (
             <VanillaCapeImage
               imageUrl={imageUrl}
               width={displayWidth}
@@ -266,21 +270,23 @@ function CapeItemDisplay({
           <h3
             className="font-minecraft-ten text-white text-base whitespace-nowrap overflow-hidden text-ellipsis max-w-full normal-case mb-1"
             title={
-              isVanilla
-                ? (cape as VanillaCape).name
-                : creatorName || (cape as CosmeticCape).firstSeen
+              itemIsVanilla
+                ? vanillaCape.name
+                : cosmeticCape.name || creatorName || cosmeticCape.firstSeen
             }
           >
-            {isVanilla
-              ? (cape as VanillaCape).name
-              : creatorLoading
-                ? "Loading..."
-                : creatorName || "Unknown"
+            {itemIsVanilla
+              ? vanillaCape.name
+              : cosmeticCape.name
+                ? cosmeticCape.name
+                : creatorLoading
+                  ? "Loading..."
+                  : creatorName || "Pixel Play"
             }
           </h3>
 
           {/* Usage Stats (only for pixelplay capes) */}
-          {!isVanilla && (
+          {!itemIsVanilla && (
             <div className="flex items-center justify-center gap-2 text-xs font-minecraft-ten">
               <div className="text-white/60 flex items-center gap-1">
                 <Icon
@@ -299,7 +305,7 @@ function CapeItemDisplay({
 
 
 export interface CapeListProps {
-  capes: CosmeticCape[] | VanillaCape[];
+  capes: (CosmeticCape | VanillaCape)[];
   onEquipCape: (capeHash: string) => void;
   isLoading?: boolean;
   isEquippingCapeId?: string | null;
@@ -372,7 +378,7 @@ export function CapeList({
   const missingFavoriteIds = useMemo(() => {
     // Always fetch missing favorites, regardless of groupFavoritesInHeader
     // Don't include placeholders in the check
-    const presentIds = new Set(capes.map((c) => c._id));
+    const presentIds = new Set(capes.map((c) => "_id" in c ? c._id : ""));
     const fetchedIds = new Set(favoriteCapesFetched.keys());
     return favoriteCapeIds.filter((id) => !presentIds.has(id) && !fetchedIds.has(id));
   }, [favoriteCapeIds, capes, favoriteCapesFetched]);
@@ -609,7 +615,7 @@ export function CapeList({
             }}
           >
             {stableFavoriteCapes.map((cape) => {
-              const imageUrl = `https://cdn.norisk.gg/capes/prod/${cape._id}.png`;
+              const imageUrl = cosmeticCapeUrl(cape._id);
               return (
                 <CapeItemDisplay
                   key={`fav-${cape._id}`}
@@ -643,10 +649,11 @@ export function CapeList({
           }}
         >
           {itemsToRender.map((cape) => {
-            const imageUrl = isVanilla
+            const vanillaItem = isVanilla || isVanillaCapeItem(cape);
+            const imageUrl = vanillaItem
               ? (cape as VanillaCape).url
-              : `https://cdn.norisk.gg/capes/prod/${(cape as CosmeticCape)._id}.png`;
-            const capeId = isVanilla ? (cape as VanillaCape).id : (cape as CosmeticCape)._id;
+              : cosmeticCapeUrl((cape as CosmeticCape)._id);
+            const capeId = vanillaItem ? (cape as VanillaCape).id : (cape as CosmeticCape)._id;
             const isEquipped = equippedCapeId === capeId;
             return (
               <CapeItemDisplay
@@ -656,14 +663,14 @@ export function CapeList({
                 isCurrentlyEquipping={isEquippingCapeId === capeId}
                 isEquipped={isEquipped}
                 onEquipCape={onEquipCape}
-                canDelete={canDelete && !isVanilla}
+                canDelete={canDelete && !vanillaItem}
                 onDeleteCapeClick={handleDeleteClickInternal}
                 creatorNameCache={creatorNameCacheRef.current}
-                onContextMenu={(e) => handleCapeContextMenu(cape, e)}
+                onContextMenu={(e) => { if (!vanillaItem) handleCapeContextMenu(cape as CosmeticCape, e); }}
                 activeAccount={activeAccount}
                 showModal={(id, component) => showModal(id, component)}
                 hideModal={(id) => hideModal(id)}
-                isVanilla={isVanilla}
+                isVanilla={vanillaItem}
               />
             );
           })}
@@ -725,9 +732,10 @@ function Cape3DPreviewWithToggle({
   isEquipped?: boolean; // Optional - für Vanilla Capes relevant
 }) {
   const [showElytra, setShowElytra] = useState(false);
+  const skinVariant = useAccountSkinVariant();
 
   // Verwende capeUrl falls übergeben, sonst CDN URL
-  const finalCapeUrl = capeUrl || `https://cdn.norisk.gg/capes/prod/${capeId}.png`;
+  const finalCapeUrl = capeUrl || cosmeticCapeUrl(capeId);
 
   return (
     <div className="p-4">
@@ -749,6 +757,7 @@ function Cape3DPreviewWithToggle({
         <SkinView3DWrapper
           skinUrl={skinUrl}
           capeUrl={finalCapeUrl}
+          skinVariant={skinVariant}
           enableAutoRotate={true}
           autoRotateSpeed={0.5}
           startFromBack={true}

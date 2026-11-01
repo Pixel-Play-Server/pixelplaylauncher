@@ -35,7 +35,11 @@ export function useGlobalDragAndDrop() {
 
     const setupListener = async () => {
       try {
-        const currentWebviewWindow = getCurrentWebviewWindow();
+        const currentWebviewWindow = await Promise.resolve(getCurrentWebviewWindow());
+        if (!currentWebviewWindow || typeof currentWebviewWindow.onDragDropEvent !== "function") {
+          console.warn(`[DragDrop Hook ${instanceId}] Drag and drop API not available (Wails/Tauri).`);
+          return;
+        }
         
         unlistenDragDrop = await currentWebviewWindow.onDragDropEvent(async (event: TauriEvent<unknown>) => {
           const eventTimestamp = new Date().toISOString();
@@ -68,7 +72,10 @@ export function useGlobalDragAndDrop() {
             }, PROCESS_COOLDOWN_MS);
 
             const profilePackPath = droppedPaths.find(path =>
-              path.toLowerCase().endsWith('.pixelplaypack') || path.toLowerCase().endsWith('.mrpack') || path.toLowerCase().endsWith('.zip')
+              path.toLowerCase().endsWith('.pixelplaypack') ||
+              path.toLowerCase().endsWith('.ppack') ||
+              path.toLowerCase().endsWith('.mrpack') ||
+              path.toLowerCase().endsWith('.zip')
             );
 
             if (profilePackPath) {
@@ -166,15 +173,14 @@ export function useGlobalDragAndDrop() {
                 toast(`No files matching expected types (${expectedExtensions.join(', ')}) for ${itemTypeName} were dropped.`);
               }
             } else {
-              toast('Drop files onto an active profile content area to import them, or drop a .pixelplaypack/.mrpack/.zip file anywhere to import a profile.');
+              toast('Drop files onto an active profile content area to import them, or drop a .ppack/.mrpack/.zip file anywhere to import a profile.');
             }
           } else if (payload.type === 'cancel') {
             console.log(`[DragDrop Hook ${instanceId}] File drop cancelled at ${eventTimestamp}`);
           }
         });
       } catch (error) {
-        console.error(`[DragDrop Hook ${instanceId}] Failed to set up drag and drop listener:`, error);
-        toast.error("Could not initialize drag & drop listener.");
+        console.warn(`[DragDrop Hook ${instanceId}] Drag and drop listener not available:`, error);
       }
     };
 

@@ -8,6 +8,7 @@ import { Label } from "../../ui/Label";
 import { SearchStyleInput } from "../../ui/Input";
 import { gsap } from "gsap";
 import { cn } from "../../../lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface WindowSettingsTabProps {
   editedProfile: Profile;
@@ -18,6 +19,7 @@ export function WindowSettingsTab({
   editedProfile,
   updateProfile,
 }: WindowSettingsTabProps) {
+  const { t } = useTranslation();
   const accentColor = useThemeStore((state) => state.accentColor);
   const isBackgroundAnimationEnabled = useThemeStore(
     (state) => state.isBackgroundAnimationEnabled,
@@ -52,7 +54,7 @@ export function WindowSettingsTab({
   }, [isBackgroundAnimationEnabled]);
 
   const resolutionPresets = [
-    { width: 854, height: 480, label: "Default" },
+    { width: 854, height: 480, label: t("profile.resolutionDefault") },
     { width: 1280, height: 720, label: "720p" },
     { width: 1920, height: 1080, label: "1080p" },
     { width: 2560, height: 1440, label: "1440p" },
@@ -96,22 +98,22 @@ export function WindowSettingsTab({
     <div ref={tabRef} className="space-y-6 select-none">
       <div>
         <h3 className="text-3xl font-minecraft text-white mb-2 lowercase">
-          window settings
+          {t("profile.windowSettings")}
         </h3>
         <p className="text-xs text-white/70 mb-4 font-minecraft-ten tracking-wide select-none">
-          configure how minecraft's window appears on your screen.
+          {t("profile.windowDescription")}
         </p>
       </div>
 
       <div ref={resolutionRef} className="space-y-4">
         <div>
           <h3 className="text-3xl font-minecraft text-white mb-3 lowercase">
-            resolution
+            {t("profile.resolution")}
           </h3>
           <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-xl text-white/70 font-minecraft mb-2 lowercase tracking-wide select-none">
-                  width
+                  {t("profile.width")}
                 </label>
                 <SearchStyleInput
                   type="number"
@@ -130,7 +132,7 @@ export function WindowSettingsTab({
               </div>
               <div>
                 <label className="block text-xl text-white/70 font-minecraft mb-2 lowercase tracking-wide select-none">
-                  height
+                  {t("profile.height")}
                 </label>
                 <SearchStyleInput
                   type="number"
@@ -180,7 +182,7 @@ export function WindowSettingsTab({
           <Checkbox
             checked={editedProfile.settings?.fullscreen || false}
             onChange={(e) => handleFullscreenChange(e.target.checked)}
-            label="fullscreen"
+            label={t("profile.fullscreen")}
             className="text-2xl"
             variant="flat"
           />

@@ -1,19 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { BlogPost } from '../types/wordPress';
 import type { Profile } from '../types/profile';
 import { useProfileStore } from '../store/profile-store';
 import { getBlockedModsConfig } from './flagsmith-service';
-
-/**
- * Fetches the latest news and changelog posts from the backend.
- *
- * @returns A promise that resolves to an array of BlogPost objects.
- * @throws If the backend command fails.
- */
-export const fetchNewsAndChangelogs = (): Promise<BlogPost[]> => {
-  // Directly invoke and return the promise. Errors will propagate to the caller.
-  return invoke('get_news_and_changelogs_command');
-};
 
 /**
  * Triggers a refresh of the pixelplay packs configuration from the backend.
@@ -66,17 +54,18 @@ export const refreshNrcDataOnMount = async (): Promise<void> => {
       console.log("pixelplay Packs updated successfully on mount!");
       nrcPacksSuccess = true;
     } catch (error) {
-      console.error("Failed to refresh pixelplay Packs on mount:", error);
+      console.warn("Remote pixelplay packs refresh failed; using local/bundled cache.", error);
+      nrcPacksSuccess = true;
     }
 
     try {
       const standardProfiles = await refreshStandardVersions();
       console.log("Standard Versions updated successfully on mount!");
-      // Store the standard profiles in the profile store
       useProfileStore.setState({ standardProfiles });
       standardVersionsSuccess = true;
     } catch (error) {
-      console.error("Failed to refresh Standard Versions on mount:", error);
+      console.warn("Remote standard versions refresh failed; using cached profiles.", error);
+      standardVersionsSuccess = true;
     }
 
     // Fetch profiles from the store after NRC data is refreshed

@@ -25,6 +25,35 @@ export interface pixelplayModEntryDefinition { // Renamed from pixelplayPackMod
     >;
 }
 
+export interface PackPolicy {
+  is_protected_by_author?: boolean;
+  allow_mod_auto_updates?: boolean;
+  block_pack_mod_updates?: boolean;
+  allow_open_folder?: boolean;
+  default_resource_packs?: string[];
+  default_shader_packs?: string[];
+  hide_mods_ui?: boolean;
+}
+
+export interface PackUpdater {
+  url?: string;
+  channel?: string;
+}
+
+export interface PPackMeta {
+  format?: string;
+  format_version?: number;
+  pack_version?: string;
+  author?: string;
+  copyright?: string;
+  icon?: string;
+  game_version?: string;
+  loader?: string;
+  policy?: PackPolicy;
+  updater?: PackUpdater;
+  notes?: string;
+}
+
 // Corresponds to Rust struct pixelplayPackDefinition
 export interface pixelplayPackDefinition {
     displayName: string; // Correct
@@ -35,6 +64,8 @@ export interface pixelplayPackDefinition {
     assets?: string[]; // Added field
     isExperimental?: boolean; // Added field
     isProtectedByAuthor?: boolean; // Lock content management when true
+    /** Metadata from PixelModpack (.ppack) */
+    ppack?: PPackMeta | null;
 }
 
 // Corresponds to Rust struct pixelplayModpacksConfig

@@ -118,7 +118,7 @@ export function ProfileWizardV2({ onClose, onSave, defaultGroup }: ProfileWizard
 
     const createParams: CreateProfileParams = {
       name: profileData.name,
-      game_version: profileData.minecraftVersion,
+      game_version: profileData.loader === "horizon" ? "26.3" : profileData.minecraftVersion,
       loader: profileData.loader,
       loader_version: profileData.loaderVersion || undefined,
       selected_pixelplay_pack_id: profileData.selectedpixelplayPackId || undefined,

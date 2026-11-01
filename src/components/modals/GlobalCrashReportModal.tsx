@@ -5,261 +5,130 @@ import { Button } from '../ui/buttons/Button';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-hot-toast';
 import { getProfile, getProfileLatestLogContent } from '../../services/profile-service';
-import { uploadLogToMclogs } from '../../services/log-service';
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
-import { submitCrashLog } from '../../services/process-service';
-import type { CrashlogDto } from '../../types/processState';
-import { openExternalUrl } from '../../services/tauri-service';
-import { Window } from '@tauri-apps/api/window';
-import { listen, UnlistenFn } from '@tauri-apps/api/event';
-import type { EventPayload, CrashReportContentAvailablePayload } from '../../types/events';
-import { EventType } from '../../types/events';
+import { uploadClientLog } from '../../services/log-service';
 
 export function GlobalCrashReportModal() {
   const { isCrashModalOpen, crashData, closeCrashModal } = useCrashModalStore();
   const [profileName, setProfileName] = useState<string>('');
-  const [mclogsUrl, setMclogsUrl] = useState<string | null>(null);
-  const [pixelplayReportSubmitted, setpixelplayReportSubmitted] = useState<boolean>(false);
+  const [uploaded, setUploaded] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [displayedCrashReportContent, setDisplayedCrashReportContent] = useState<string | undefined>(undefined);
-  const [isListeningForCrashContent, setIsListeningForCrashContent] = useState(false);
+  const [logPreview, setLogPreview] = useState<string>('');
 
   useEffect(() => {
-    if (crashData?.profile_id) {
-      if (crashData.process_metadata?.profile_name) {
-        setProfileName(crashData.process_metadata.profile_name);
-      } else {
-        setProfileName(crashData.profile_id);
-        getProfile(crashData.profile_id)
-          .then(details => {
-            if (details?.name) {
-              setProfileName(details.name);
-            }
-          })
-          .catch(err => {
-            console.error(`Failed to fetch profile details for ${crashData.profile_id}:`, err);
-          });
-      }
-      setMclogsUrl(null);
-      setpixelplayReportSubmitted(false);
-      setIsProcessing(false);
-      setDisplayedCrashReportContent(crashData.crash_report_content);
-      setIsListeningForCrashContent(false);
-    } else {
+    if (!crashData?.profile_id) {
       setProfileName('');
-      setMclogsUrl(null);
-      setpixelplayReportSubmitted(false);
+      setUploaded(false);
       setIsProcessing(false);
-      setDisplayedCrashReportContent(undefined);
-      setIsListeningForCrashContent(false);
+      setLogPreview('');
+      return;
+    }
+    setUploaded(false);
+    setIsProcessing(false);
+    setProfileName(crashData.process_metadata?.profile_name || crashData.profile_id);
+    const preview = [crashData.crash_report_content, crashData.latest_log_content]
+      .filter((part) => part && part.trim() !== '')
+      .join('\n\n');
+    setLogPreview(preview);
+    if (!crashData.process_metadata?.profile_name) {
+      getProfile(crashData.profile_id)
+        .then((details) => {
+          if (details?.name) setProfileName(details.name);
+        })
+        .catch(() => {});
+    }
+    if (!preview) {
+      getProfileLatestLogContent(crashData.profile_id)
+        .then((content) => {
+          if (content) setLogPreview(content);
+        })
+        .catch(() => {});
     }
   }, [crashData]);
-
-  useEffect(() => {
-    const focusRelevantWindow = async () => {
-      if (isCrashModalOpen && crashData?.process_id) {
-        const crashedProcessId = crashData.process_id;
-        console.log(`Crash modal open for process ${crashedProcessId}. Attempting to focus relevant window.`);
-
-        const logWindowLabel = `log_window_${crashedProcessId}`;
-        try {
-          const targetWindowInstance = await Window.getByLabel(logWindowLabel);
-          if (targetWindowInstance) {
-            console.log(`Focusing log window: ${logWindowLabel}`);
-            await targetWindowInstance.show();
-            await targetWindowInstance.unminimize();
-            await targetWindowInstance.setFocus();
-          }
-        } catch (e) {
-          console.warn(`Log window with label ${logWindowLabel} not found for process ${crashedProcessId}:`, e);
-        }
-
-        try {
-          const mainWindowInstance = await Window.getByLabel('main');
-          if (mainWindowInstance) {
-            console.log("Focusing main application window as fallback.");
-            await mainWindowInstance.show();
-            await mainWindowInstance.unminimize();
-            await mainWindowInstance.setFocus();
-          }
-        } catch (e) {
-          console.error("Error getting or focusing main window:", e);
-        }
-      }
-    };
-
-    focusRelevantWindow();
-  }, [isCrashModalOpen, crashData]);
-
-  useEffect(() => {
-    let unlistenFn: UnlistenFn | undefined;
-
-    const listenForCrashContent = async () => {
-      if (isCrashModalOpen && crashData?.process_id && !displayedCrashReportContent && !isListeningForCrashContent) {
-        setIsListeningForCrashContent(true);
-        console.log(`Listening for CrashReportContentAvailable for process ${crashData.process_id}`);
-        try {
-          unlistenFn = await listen<EventPayload>(EventType.CrashReportContentAvailable, (event) => {
-            if (event.payload.target_id === crashData.process_id) {
-              try {
-                const contentPayload = JSON.parse(event.payload.message) as CrashReportContentAvailablePayload;
-                if (contentPayload.content) {
-                  console.log(`Received CrashReportContentAvailable for process ${crashData.process_id}`);
-                  setDisplayedCrashReportContent(contentPayload.content);
-                  toast.success("Detailed crash report loaded!");
-                  setIsListeningForCrashContent(false);
-                  if (unlistenFn) unlistenFn();
-                }
-              } catch (e) {
-                console.error("Failed to parse CrashReportContentAvailablePayload:", e);
-              }
-            }
-          });
-        } catch (error) {
-          console.error("Failed to set up listener for CrashReportContentAvailable:", error);
-          setIsListeningForCrashContent(false);
-        }
-      }
-    };
-
-    listenForCrashContent();
-
-    return () => {
-      if (unlistenFn) {
-        console.log("Cleaning up CrashReportContentAvailable listener.");
-        unlistenFn();
-      }
-      setIsListeningForCrashContent(false);
-    };
-  }, [isCrashModalOpen, crashData?.process_id, displayedCrashReportContent, isListeningForCrashContent]);
 
   if (!isCrashModalOpen || !crashData) {
     return null;
   }
 
-  const handlePrimaryAction = async () => {
-    if (!crashData?.profile_id || !crashData?.process_metadata) {
-      toast.error("Cannot proceed: Missing critical crash data.");
-      console.error("Action error: Missing profile_id or process_metadata", crashData);
-      return;
-    }
-
+  const handleUpload = async () => {
     setIsProcessing(true);
-    let currentMclogsUrl = mclogsUrl;
-    const mainToastId = toast.loading('Processing crash report...');
-
+    const toastId = toast.loading('Subiendo logs al panel…');
     try {
-      if (!currentMclogsUrl) {
-        toast.loading('Fetching latest log content...', { id: mainToastId });
-        const logContent = await getProfileLatestLogContent(crashData.profile_id);
-        
-        let combinedLogContent = logContent;
-        if (displayedCrashReportContent && displayedCrashReportContent.trim() !== "") {
-          combinedLogContent = `--- CRASH REPORT ---\n${displayedCrashReportContent}\n\n--- LATEST LOG ---\n${logContent}`;
-          toast.loading('Preparing combined log (crash report + latest.log)...', { id: mainToastId });
-        }
-
-        if (!combinedLogContent || combinedLogContent.trim() === "") {
-          throw new Error("No log content found to upload.");
-        }
-        
-        toast.loading('Uploading to mclogs.com...', { id: mainToastId });
-        currentMclogsUrl = await uploadLogToMclogs(combinedLogContent);
-        setMclogsUrl(currentMclogsUrl);
+      let latest = crashData.latest_log_content || '';
+      const crash = crashData.crash_report_content || '';
+      if (!latest.trim() && crashData.profile_id) {
+        latest = await getProfileLatestLogContent(crashData.profile_id);
       }
-
-      if (currentMclogsUrl && !pixelplayReportSubmitted) {
-        toast.loading('Submitting crash report to pixelplay...', { id: mainToastId });
-        const crashReportPayload: CrashlogDto = {
-          mcLogsUrl: currentMclogsUrl,
-          metadata: crashData.process_metadata!, 
-        };
-        
-        await submitCrashLog(crashReportPayload);
-        setpixelplayReportSubmitted(true);
-        
-        try {
-          await writeText(currentMclogsUrl);
-          toast.success("Report submitted & Log URL copied!", { id: mainToastId });
-        } catch (copyError) {
-          console.error("Failed to copy mclogs URL after report:", copyError);
-          toast.success(`Report submitted. Log URL: ${currentMclogsUrl} (Copying failed)`, { id: mainToastId });
-        }
-      } else if (currentMclogsUrl && pixelplayReportSubmitted) {
-        toast.dismiss(mainToastId);
-        await writeText(currentMclogsUrl);
-        toast.success("mclogs.com URL copied to clipboard!");
-      } else {
-        toast.dismiss(mainToastId);
+      if (!latest.trim() && !crash.trim()) {
+        throw new Error('No hay logs para subir. El juego no dejó latest.log.');
       }
+      const result = await uploadClientLog({
+        profileId: crashData.profile_id,
+        exitCode: crashData.exit_code,
+        logContent: latest,
+        crashReport: crash,
+        mcName: crashData.process_metadata?.account_name,
+        profileName: crashData.process_metadata?.profile_name || profileName,
+        pack: crashData.process_metadata?.pixelplay_pack,
+        minecraftVersion: crashData.process_metadata?.minecraft_version,
+        loader: crashData.process_metadata?.modloader,
+      });
+      if (!result?.ok) {
+        throw new Error('La API no aceptó el log.');
+      }
+      setUploaded(true);
+      toast.success('Logs enviados. Ya los puedes ver en el panel.', { id: toastId });
     } catch (error: any) {
-      toast.error(error.message || 'An unexpected error occurred.', { id: mainToastId });
-      console.error("Crash report processing error:", error);
+      toast.error(error?.message || 'No se pudieron subir los logs.', { id: toastId });
     } finally {
       setIsProcessing(false);
     }
   };
-  
-  const handleContactSupport = async () => {
-    try {
-      await openExternalUrl('https://discord.pixelplay.gg');
-      toast.success("Opened pixelplay Discord in your browser!");
-    } catch (error) {
-      console.error("Failed to open Discord URL:", error);
-      toast.error("Could not open Discord. Please go to discord.pixelplay.gg manually.");
-    }
-  };
 
-  let primaryButtonText = 'Upload Logs & Report';
-  if (mclogsUrl && pixelplayReportSubmitted) {
-    primaryButtonText = 'Copy Log URL';
-  }
-
-  const modalFooter = (
-    <div className="flex flex-wrap justify-end gap-3">
-      <Button 
-        onClick={handlePrimaryAction} 
-        variant="secondary" 
-        icon={<Icon icon={mclogsUrl && pixelplayReportSubmitted ? "solar:copy-line-duotone" : "solar:upload-linear"} className="w-5 h-5" />}
-        disabled={isProcessing || !crashData?.process_metadata}
-      >
-        {primaryButtonText}
-      </Button>
-      <Button 
-        onClick={handleContactSupport} 
-        variant="default" 
-        icon={<Icon icon="solar:letter-linear" className="w-5 h-5" />}
-        disabled={isProcessing}
-      >
-        Contact Support
-      </Button>
-    </div>
-  );
-
-  const titleSubtitleNode = (
-    <p className="text-xs font-minecraft-ten text-gray-400">
-      Profile: {crashData.process_metadata?.profile_name || profileName || 'Loading...'}
-    </p>
-  );
+  const previewTail = logPreview
+    ? logPreview.split(/\r?\n/).slice(-40).join('\n')
+    : '';
 
   return (
     <Modal
-      title="Minecraft Crash Report"
+      title="Minecraft se cerró con error"
       titleIcon={<Icon icon="solar:danger-bold" className="w-7 h-7 text-red-400" />}
-      titleSubtitle={titleSubtitleNode}
+      titleSubtitle={
+        <p className="text-xs font-minecraft-ten text-gray-400">
+          {crashData.process_metadata?.account_name
+            ? `${crashData.process_metadata.account_name} · `
+            : ''}
+          {profileName || 'Perfil'}
+        </p>
+      }
       onClose={() => !isProcessing && closeCrashModal()}
-      width="md"
-      footer={modalFooter}
+      width="lg"
+      footer={
+        <div className="flex flex-wrap justify-end gap-3">
+          <Button
+            onClick={handleUpload}
+            variant="secondary"
+            icon={<Icon icon="solar:upload-linear" className="w-5 h-5" />}
+            disabled={isProcessing}
+          >
+            {uploaded ? 'Volver a subir logs' : 'Subir logs'}
+          </Button>
+        </div>
+      }
     >
-      <div className="p-6 space-y-4 text-white text-base text-center">
-        <p className="pt-3 text-gray-300 text-lg font-minecraft-ten">
-          An unexpected error occurred and the game crashed. We are sorry for the inconvenience.
+      <div className="p-6 space-y-4 text-white">
+        <p className="text-gray-300 text-base">
+          El juego no salió con código 0. Si fue un crash, subí los logs para verlos
+          en el panel con el nombre de Minecraft y la IP.
         </p>
-
-        <p className="pt-4 text-2xl font-minecraft text-red-400">
-          exit code: {crashData.exit_code ?? 'N/A'}
+        <p className="text-2xl font-minecraft text-red-400 text-center">
+          código de salida: {crashData.exit_code ?? 'N/A'}
         </p>
+        {previewTail && (
+          <pre className="max-h-56 overflow-auto rounded-md bg-black/40 p-3 text-left text-xs text-gray-300 whitespace-pre-wrap break-words">
+            {previewTail}
+          </pre>
+        )}
       </div>
     </Modal>
   );
-} 
+}

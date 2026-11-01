@@ -1,7 +1,7 @@
 import { ContentType } from "./content";
 import { ModPlatform } from "./unified";
 
-export type ModLoader = "vanilla" | "forge" | "fabric" | "quilt" | "neoforge";
+export type ModLoader = "vanilla" | "forge" | "fabric" | "quilt" | "neoforge" | "horizon";
 export type ProfileState =
   | "not_installed"
   | "installing"

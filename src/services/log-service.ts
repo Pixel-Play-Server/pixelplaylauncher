@@ -263,6 +263,20 @@ export async function uploadLogToMclogs(logContent: string): Promise<string> {
     return await invoke<string>('upload_log_to_mclogs_command', { logContent });
 }
 
+export async function uploadClientLog(payload: {
+  profileId?: string;
+  exitCode?: number | null;
+  logContent?: string;
+  crashReport?: string;
+  mcName?: string | null;
+  profileName?: string | null;
+  pack?: string | null;
+  minecraftVersion?: string | null;
+  loader?: string | null;
+}): Promise<{ ok: boolean; id?: string }> {
+  return await invoke<{ ok: boolean; id?: string }>('upload_client_log_command', payload);
+}
+
 /**
  * Requests the operating system to open the directory containing the specified file path.
  * @param filePath The path to a file within the directory to open.

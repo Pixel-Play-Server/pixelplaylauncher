@@ -52,6 +52,7 @@ import { Tooltip } from "../../../ui/Tooltip"; // Added for custom tooltips
 import { ActionButton } from "../../../ui/ActionButton"; // Added for custom update button
 import { ModUpdateText, useModUpdateText } from "../../../ui/ModUpdateText"; // Added for formatted update text
 import { getUpdateIdentifier } from "../../../../utils/update-identifier-utils";
+import { useTranslation } from "react-i18next";
 
 /**
  * Determines if a given version is the currently installed version for an item
@@ -187,6 +188,7 @@ export function LocalContentTabV2<T extends LocalContentItem>({
   onBrowseContentRequest, // Destructure new prop
 }: LocalContentTabV2Props<T>) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const accentColor = useThemeStore((state) => state.accentColor);
   const { confirm, confirmDialog } = useConfirmDialog(); // Added hook
   const { copyProfile, fetchProfiles, updateProfile } = useProfileStore(); // Added updateProfile
@@ -1434,8 +1436,30 @@ export function LocalContentTabV2<T extends LocalContentItem>({
       <>
         <EmptyState
           icon="solar:lock-keyhole-bold-duotone"
-          message="Mods protegidos por el autor"
-          description="Este modpack del launcher bloquea la edición y visualización de mods para mantener la instalación íntegra."
+          message={t("profiles.authorProtection.title")}
+          description={t("profiles.authorProtection.description")}
+          fullHeight={true}
+          className="justify-center"
+          preserveCase={true}
+        />
+        {confirmDialog}
+      </>
+    );
+  }
+
+  // Pack-linked profiles: wait for pack config before rendering the mod list.
+  // Avoids a React crash from rendering disk mods before protection flags load.
+  if (
+    profile?.selected_pixelplay_pack_id &&
+    (contentType === "Mod" || contentType === "pixelplayMod") &&
+    (isFetchingPacksConfig || !pixelplayPacksConfig)
+  ) {
+    return (
+      <>
+        <EmptyState
+          icon="solar:refresh-bold-duotone"
+          message={`Loading ${itemTypeNamePlural}...`}
+          description="Syncing modpack configuration."
           fullHeight={true}
           className="justify-center"
         />

@@ -71,9 +71,9 @@ export function ThemedSurface({
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
-  const opacityDefault = 0.2;
-  const opacityHover = 0.48;
-  const opacityActive = 0.6;
+  const opacityDefault = 0.55;
+  const opacityHover = 0.72;
+  const opacityActive = 0.88;
 
   let currentBorderOpacity = opacityDefault;
   if (alwaysActive) {
@@ -90,8 +90,8 @@ export function ThemedSurface({
   } = borderVisibility || {};
 
   const internalStyles = {
-    '--surface-bg-default': parseHexToRgba(effectiveBaseColor, 0.03),
-    '--surface-bg-hover': parseHexToRgba(effectiveBaseColor, 0.1),
+    '--surface-bg-default': parseHexToRgba(effectiveBaseColor, 0.22),
+    '--surface-bg-hover': parseHexToRgba(effectiveBaseColor, 0.34),
     borderTopColor: ((isSurfaceHovered && !alwaysActive) || showTopBorder) ? parseHexToRgba(effectiveBaseColor, currentBorderOpacity) : 'transparent',
     borderRightColor: ((isSurfaceHovered && !alwaysActive) || showRightBorder) ? parseHexToRgba(effectiveBaseColor, currentBorderOpacity) : 'transparent',
     borderBottomColor: ((isSurfaceHovered && !alwaysActive) || showBottomBorder) ? parseHexToRgba(effectiveBaseColor, currentBorderOpacity) : 'transparent',

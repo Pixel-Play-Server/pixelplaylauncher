@@ -7,6 +7,7 @@ import { SearchStyleInput } from "../../ui/Input";
 import { Checkbox } from "../../ui/Checkbox";
 import { gsap } from "gsap";
 import { ProfileIcon } from "../ProfileIcon";
+import { useTranslation } from "react-i18next";
 
 interface GeneralSettingsTabProps {
   profile: Profile;
@@ -27,6 +28,7 @@ export function GeneralSettingsTab({
   onDelete,
   isDeleting,
 }: GeneralSettingsTabProps) {
+  const { t } = useTranslation();
   const accentColor = useThemeStore((state) => state.accentColor);
   const isBackgroundAnimationEnabled = useThemeStore(
     (state) => state.isBackgroundAnimationEnabled,
@@ -71,7 +73,7 @@ export function GeneralSettingsTab({
         <div className="flex gap-6">
           <div className="flex-1 flex flex-col">
             <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
-              profile name
+              {t("profile.profileName")}
             </label>
             <div className="flex items-center gap-4">
               <ProfileIcon
@@ -93,7 +95,7 @@ export function GeneralSettingsTab({
               <SearchStyleInput
                 value={editedProfile.name}
                 onChange={(e) => updateProfile({ name: e.target.value })}
-                placeholder="Enter profile name"
+                placeholder={t("profile.namePlaceholder")}
                 className="text-xl flex-1"
                 disabled={profile.is_standard_version ? true : false}
               />
@@ -102,13 +104,13 @@ export function GeneralSettingsTab({
 
           <div className="flex-1 flex flex-col">
             <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
-              group
+              {t("profile.group")}
             </label>
             <div className="flex items-center">
               <SearchStyleInput
                 value={editedProfile.group || ""}
                 onChange={(e) => updateProfile({ group: e.target.value || null })}
-                placeholder="e.g. modpacks, vanilla+"
+                placeholder={t("profile.groupPlaceholder")}
                 className="text-xl w-full"
                 disabled={profile.is_standard_version ? true : false}
               />
@@ -119,7 +121,7 @@ export function GeneralSettingsTab({
         {/* Shared Minecraft Folder Checkbox */}
         <div className="space-y-1">
           <Checkbox
-            label="Use shared Minecraft folder"
+            label={t("profile.sharedFolder")}
             checked={editedProfile.use_shared_minecraft_folder ?? false}
             onChange={(event) => {
               const newValue = event.target.checked;
@@ -127,18 +129,18 @@ export function GeneralSettingsTab({
                 use_shared_minecraft_folder: newValue
               });
             }}
-            description="When enabled, a shared Minecraft folder will be used based on the group. Your settings, worlds, configs and resource packs will remain the same between profiles."
+            description={t("profile.sharedFolderDescription")}
             descriptionClassName="font-minecraft-ten text-sm"
             size="lg"
           />
           <p className="text-xs text-white/50 font-minecraft-ten ml-10 -mt-1">
-            (you can change this anytime)
+            {t("profile.sharedFolderHint")}
           </p>
         </div>
 
         <div>
           <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
-            quick play path
+            {t("profile.quickPlayPath")}
           </label>
           <SearchStyleInput
             value={editedProfile.settings.quick_play_path || ""}
@@ -150,18 +152,17 @@ export function GeneralSettingsTab({
                 }
               })
             }
-            placeholder="World name or server address (e.g. MyWorld or hypixel.net)"
+            placeholder={t("profile.quickPlayPlaceholder")}
             className="text-xl"
           />
           <p className="text-xs text-white/70 mt-2 font-minecraft-ten tracking-wide select-none">
-            Enter a world name for singleplayer or server address for multiplayer.
-            Server addresses are detected by containing a dot (e.g. hypixel.net).
+            {t("profile.quickPlayDescription")}
           </p>
         </div>
 
         <div>
           <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
-            pre launch hook
+            {t("settings.preLaunchHook")}
           </label>
           <SearchStyleInput
             value={editedProfile.settings.hooks?.pre_launch || ""}
@@ -180,14 +181,14 @@ export function GeneralSettingsTab({
                 },
               })
             }
-            placeholder="Command to execute before game launch"
+            placeholder={t("profile.preLaunchPlaceholder")}
             className="text-xl"
           />
         </div>
 
         <div>
           <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
-            wrapper hook
+            {t("settings.wrapperHook")}
           </label>
           <SearchStyleInput
             value={editedProfile.settings.hooks?.wrapper || ""}
@@ -206,14 +207,14 @@ export function GeneralSettingsTab({
                 },
               })
             }
-            placeholder="Wrapper command (e.g. gamemoderun)"
+            placeholder={t("profile.wrapperPlaceholder")}
             className="text-xl"
           />
         </div>
 
         <div>
           <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
-            post exit hook
+            {t("settings.postExitHook")}
           </label>
           <SearchStyleInput
             value={editedProfile.settings.hooks?.post_exit || ""}
@@ -232,7 +233,7 @@ export function GeneralSettingsTab({
                 },
               })
             }
-            placeholder="Command to execute after game closes"
+            placeholder={t("profile.postExitPlaceholder")}
             className="text-xl"
           />
         </div>

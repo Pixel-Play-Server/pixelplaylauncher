@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import {
   Outlet,
   useLocation,
@@ -25,6 +25,7 @@ import { GlobalModalPortal } from "./components/ui/GlobalModalPortal";
 import { useCrashModalStore } from "./store/crash-modal-store";
 import { useThemeStore } from "./store/useThemeStore";
 import { useProfileStore } from "./store/profile-store";
+import { usePackUpdaterStore } from "./store/pack-updater-store";
 import { useGlobalModalStore } from "./hooks/useGlobalModal";
 import { refreshNrcDataOnMount } from "./services/nrc-service";
 import * as ProcessService from "./services/process-service";
@@ -36,9 +37,19 @@ import { useGlobalDragAndDrop } from './hooks/useGlobalDragAndDrop';
 import { loadIcons } from '@iconify/react';
 import './lib/i18n'; // Initialize i18n
 import { useTranslation } from 'react-i18next';
+import { usePixelPresence } from "./hooks/usePixelPresence";
+import { useRankWatch } from "./hooks/useRankWatch";
+const RankUpgradeOverlay = lazy(() =>
+  import("./components/account/RankUpgradeOverlay").then((m) => ({ default: m.RankUpgradeOverlay })),
+);
+import { useRankUpgradeStore } from "./store/rank-upgrade-store";
+import { refreshRankCatalog } from "./lib/pixel-rank";
 
 import flagsmith from 'flagsmith';
 import { FlagsmithProvider } from 'flagsmith/react';
+import { UpdateAvailableModal, type UpdateAvailableInfo } from "./components/updater/UpdateAvailableModal";
+import { PackUpdateModal, type PackUpdateInfo } from "./components/updater/PackUpdateModal";
+import { VCRedistModal, type VCRedistInfo } from "./components/modals/VCRedistModal";
 
 export type ProfilesTabContext = {
   currentGroupingCriterion: string;
@@ -51,12 +62,35 @@ export function App() {
   const { openCrashModal } = useCrashModalStore();
   const { hasAcceptedTermsOfService } = useThemeStore();
   const { i18n } = useTranslation();
+  usePixelPresence();
+  useRankWatch();
+  useEffect(() => {
+    void refreshRankCatalog(true);
+    const t = window.setInterval(() => {
+      void refreshRankCatalog(false);
+    }, 30 * 60_000);
+    let unlisten: (() => void) | undefined;
+    void listen("ranks_updated", () => {
+      void refreshRankCatalog(true);
+    }).then((fn) => {
+      unlisten = fn;
+    });
+    return () => {
+      window.clearInterval(t);
+      unlisten?.();
+    };
+  }, []);
+  const rankUpgrade = useRankUpgradeStore((s) => s.info);
+  const hideRankUpgrade = useRankUpgradeStore((s) => s.hide);
 
   const activeTab = location.pathname.substring(1) || "play";
   const { modals } = useGlobalModalStore();
 
   const [currentGroupingCriterion, setCurrentGroupingCriterion] =
     useState<string>("none");
+  const [updateInfo, setUpdateInfo] = useState<UpdateAvailableInfo | null>(null);
+  const [packUpdate, setPackUpdate] = useState<PackUpdateInfo | null>(null);
+  const [vcRedistInfo, setVCRedistInfo] = useState<VCRedistInfo | null>(null);
 
   const FLAGSMITH_ENVIRONMENT_ID = "eNSibjDaDW2nNJQvJnjj9y"; // User confirmed this is set
   useEffect(() => {
@@ -116,51 +150,246 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const unlisten = listen<FrontendEventPayload>(
+    const handleExit = (raw: unknown) => {
+      const exitPayload = parseMinecraftExitPayload(raw);
+      if (!exitPayload) {
+        toast.error("Minecraft se cerró y no se pudo leer el código de salida.");
+        return;
+      }
+      if (exitPayload.stopped) {
+        return;
+      }
+      if (!exitPayload.success) {
+        const code = exitPayload.exit_code;
+        const isDllMissing =
+          code === 3221225781 ||
+          code === -1073741515 ||
+          (typeof code === "number" && (code >>> 0) === 0xc0000135);
+        const hint = exitPayload.exit_hint || "";
+        toast.error(
+          hint
+            ? `Minecraft se cerró (código ${code ?? "N/A"}). ${isDllMissing ? "Revisá el mensaje de Visual C++ / natives." : hint.slice(0, 120)}`
+            : `Minecraft se cerró con error (código ${code ?? "N/A"}).`,
+          { duration: 12000 },
+        );
+        // VC++ popup solo vía evento vcredist_required (evita bucle si ya está instalado).
+        if (!isDllMissing) {
+          openCrashModal(exitPayload);
+        } else if (hint) {
+          toast(hint, { duration: 16000, icon: "⚠️" });
+        }
+      }
+    };
+
+    const unlistenState = listen<FrontendEventPayload>(
       "state_event",
       (event: TauriEvent<FrontendEventPayload>) => {
-        if (
-          event.payload.event_type === FrontendEventType.MinecraftProcessExited
-        ) {
-          try {
-            const exitPayload: MinecraftProcessExitedPayload = JSON.parse(
-              event.payload.message,
-            );
-            console.log(
-              "[App.tsx] Global MinecraftProcessExited event:",
-              exitPayload,
-            );
-            if (!exitPayload.success) {
-              const crashMsg = `Minecraft crashed (Exit Code: ${exitPayload.exit_code ?? "N/A"}). See crash report for details.`;
-              toast.error(crashMsg, { duration: 10000 });
-              openCrashModal(exitPayload);
-            }
-          } catch (e) {
-            console.error(
-              "[App.tsx] Failed to parse MinecraftProcessExitedPayload:",
-              e,
-            );
-            toast.error("Could not globally process Minecraft process status.");
-          }
+        if (event.payload.event_type === FrontendEventType.MinecraftProcessExited) {
+          handleExit(event.payload.message);
         }
       },
     );
+    const unlistenDirect = listen<MinecraftProcessExitedPayload>(
+      FrontendEventType.MinecraftProcessExited,
+      (event) => handleExit(event.payload),
+    );
 
     return () => {
-      unlisten.then((f) => f());
+      unlistenState.then((fn) => fn());
+      unlistenDirect.then((fn) => fn());
     };
   }, [openCrashModal]);
+
+  // Visual C++ redistributable required (DLL missing / exit 3221225781)
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let unlistenState: (() => void) | undefined;
+    void listen<VCRedistInfo>("vcredist_required", (event) => {
+      setVCRedistInfo({
+        title: event.payload?.title || "Instalá Visual C++",
+        message: event.payload?.message,
+        url: event.payload?.url,
+        path: event.payload?.path,
+      });
+    }).then((fn) => {
+      unlisten = fn;
+    });
+    void listen<FrontendEventPayload>("state_event", (event) => {
+      if (event.payload.event_type === "vcredist_required") {
+        setVCRedistInfo({
+          title: "Instalá Visual C++",
+          message: event.payload.message,
+          url: "https://aka.ms/vs/17/release/vc_redist.x64.exe",
+        });
+      }
+    }).then((fn) => {
+      unlistenState = fn;
+    });
+    return () => {
+      unlisten?.();
+      unlistenState?.();
+    };
+  }, []);
+
+  // Go/Wails updater + author-protection notifications
+  useEffect(() => {
+    let alive = true;
+    const unsubs: Array<() => void> = [];
+
+    (async () => {
+      unsubs.push(
+        await listen<{ status?: string; message?: string; to_version?: string }>(
+          "updater_status",
+          (event) => {
+            if (!alive) return;
+            const p = event.payload;
+            if (p?.status === "available") {
+              toast.success(p.message || "Actualización disponible", {
+                duration: 10000,
+                id: "updater-available",
+              });
+              setUpdateInfo({
+                message: p.message,
+                to: (p as { to_version?: string }).to_version,
+              });
+            }
+          },
+        ),
+      );
+      unsubs.push(
+        await listen<{ message?: string; to?: string; from?: string }>(
+          "updater_available",
+          (event) => {
+            if (!alive) return;
+            const p = event.payload;
+            toast.success(
+              p?.message ||
+                `Nueva versión ${p?.to ?? ""} disponible (tienes ${p?.from ?? ""})`,
+              { duration: 12000, id: "updater-available" },
+            );
+            setUpdateInfo({
+              from: p?.from,
+              to: p?.to,
+              url: (p as UpdateAvailableInfo)?.url,
+              notes: (p as UpdateAvailableInfo)?.notes,
+              message: p?.message,
+              source: (p as UpdateAvailableInfo)?.source,
+            });
+          },
+        ),
+      );
+      unsubs.push(
+        await listen<{ message?: string; action?: string }>(
+          "author_protection",
+          (event) => {
+            if (!alive) return;
+            toast.error(
+              event.payload?.message ||
+                "Protección de autor: acción bloqueada",
+              { duration: 6000, id: "author-protection" },
+            );
+          },
+        ),
+      );
+      unsubs.push(
+        await listen<{
+          pack_id?: string;
+          displayName?: string;
+          from?: string;
+          to?: string;
+        }>("modpack_update_available", (event) => {
+          if (!alive) return;
+          const p = event.payload;
+          usePackUpdaterStore.getState().markAvailable(p?.pack_id || "", p?.from, p?.to);
+          setPackUpdate({
+            pack_id: p?.pack_id,
+            displayName: p?.displayName,
+            from: p?.from,
+            to: p?.to,
+            notes: (p as { notes?: string }).notes,
+            status: "downloading",
+          });
+          toast.loading(
+            `Actualizando ${p?.displayName || p?.pack_id || "pack"} ${p?.from ?? ""} → ${p?.to ?? ""}…`,
+            { id: `pack-up-${p?.pack_id || "x"}`, duration: 20000 },
+          );
+        }),
+      );
+      unsubs.push(
+        await listen<{
+          pack_id?: string;
+          displayName?: string;
+          from?: string;
+          to?: string;
+          message?: string;
+          status?: string;
+        }>("modpack_updated", (event) => {
+          if (!alive) return;
+          const p = event.payload;
+          usePackUpdaterStore.getState().markUpdated(p?.pack_id || "", p?.to);
+          setPackUpdate((prev) => ({
+            ...(prev || {}),
+            pack_id: p?.pack_id || prev?.pack_id,
+            displayName: p?.displayName || prev?.displayName,
+            from: p?.from || prev?.from,
+            to: p?.to || prev?.to,
+            status: "done",
+          }));
+          toast.success(
+            `${p?.displayName || "Pixel"} actualizado a ${p?.to || "nueva versión"}`,
+            { id: `pack-up-${p?.pack_id || "x"}`, duration: 8000 },
+          );
+        }),
+      );
+      unsubs.push(
+        await listen<{ pack_id?: string; status?: string; message?: string }>(
+          "modpack_update_status",
+          (event) => {
+            if (!alive) return;
+            const p = event.payload;
+            if (p?.status === "error") {
+              setPackUpdate((prev) => ({
+                ...(prev || {}),
+                pack_id: p.pack_id || prev?.pack_id,
+                status: "error",
+                message: p.message,
+              }));
+              toast.error(p.message || "No se pudo actualizar el pack", {
+                id: `pack-up-${p?.pack_id || "x"}`,
+              });
+            }
+          },
+        ),
+      );
+    })();
+
+    return () => {
+      alive = false;
+      unsubs.forEach((u) => u());
+    };
+  }, []);
 
   // Listen for deep link events from the Rust backend (pixelplay://...)
   useEffect(() => {
     const unlistenDeep = listen<string>("deep_link", (event) => {
       try {
-        const url = event.payload;
-        console.log("Deep link recibido:", url);
-        toast.success("Deep link recibido: " + url);
-        // Basic behavior: navigate to Play tab where users can choose a profile to join
+        const raw = event.payload;
+        console.log("Deep link recibido:", raw);
+        const url = raw.includes("://") ? new URL(raw) : new URL(raw, "pixelplay://join");
+        const server =
+          url.searchParams.get("server") ??
+          url.searchParams.get("ip") ??
+          (url.hostname && url.hostname !== "join" ? url.hostname : null) ??
+          "mc.pixelplay.gg";
+
         navigate("/play");
-        // TODO: parse URL and auto-fill server launch parameters or prompt user to confirm join
+        toast.success(`Conectando a ${server}...`);
+
+        window.dispatchEvent(
+          new CustomEvent("pixelplay-deep-link", {
+            detail: { server, profile: url.searchParams.get("profile") },
+          }),
+        );
       } catch (e) {
         console.error("Error al manejar deep_link:", e);
         toast.error("No se pudo manejar el enlace profundo.");
@@ -241,6 +470,8 @@ export function App() {
         'solar:user-id-bold',
         'solar:widget-bold',
         'solar:emoji-funny-circle-bold',
+        'solar:users-group-rounded-bold',
+        'solar:ranking-bold',
         'solar:shop-bold',
         
         // Search & Filters
@@ -299,19 +530,44 @@ export function App() {
   }, [i18n]);
 
   useEffect(() => {
-    const tabSegment = location.pathname.split("/").filter(Boolean)[0] ?? "play";
+    const segments = location.pathname.split("/").filter(Boolean);
+    const tabSegment = segments[0] ?? "play";
     const tabLabels: Record<string, string> = {
       play: "Jugar",
       profiles: "Perfiles",
-      profilesv2: "Instancias",
+      profilesv2: "Perfiles",
+      mods: "Mods",
       skins: "Skins",
+      friends: "Amigos",
+      survival: "Survival",
+      capes: "Capes",
       settings: "Ajustes",
       logs: "Logs",
     };
     const baseLabel = tabLabels[tabSegment] ?? "Launcher";
 
-    const modalLabel = modals.length > 0 ? `Modal: ${modals[modals.length - 1].id}` : null;
-    const launcherState = modalLabel ?? baseLabel;
+    // Enrich with profile name when browsing an instance
+    let profileHint: string | null = null;
+    if (
+      (tabSegment === "profiles" || tabSegment === "profilesv2") &&
+      segments[1]
+    ) {
+      const profile = useProfileStore
+        .getState()
+        .profiles.find((p) => p.id === segments[1]);
+      if (profile?.name) {
+        profileHint = profile.name;
+      }
+    }
+
+    const modalLabel =
+      modals.length > 0 ? `Modal: ${modals[modals.length - 1].id}` : null;
+    const launcherState = [
+      modalLabel ?? baseLabel,
+      profileHint,
+    ]
+      .filter(Boolean)
+      .join(" · ");
 
     invoke("set_discord_state", {
       stateType: "launcher",
@@ -358,6 +614,29 @@ export function App() {
         <GlobalCrashReportModal />
         <TermsOfServiceModal isOpen={!hasAcceptedTermsOfService} />
         <GlobalModalPortal />
+        {updateInfo && (
+          <UpdateAvailableModal
+            info={updateInfo}
+            onClose={() => setUpdateInfo(null)}
+          />
+        )}
+        {packUpdate && (
+          <PackUpdateModal
+            info={packUpdate}
+            onClose={() => setPackUpdate(null)}
+          />
+        )}
+        {vcRedistInfo && (
+          <VCRedistModal
+            info={vcRedistInfo}
+            onClose={() => setVCRedistInfo(null)}
+          />
+        )}
+        {rankUpgrade && (
+          <Suspense fallback={null}>
+            <RankUpgradeOverlay info={rankUpgrade} onClose={hideRankUpgrade} />
+          </Suspense>
+        )}
         <AppLayout activeTab={activeTab} onNavChange={handleNavChange}>
           <Outlet context={profilesTabContext} />
         </AppLayout>
@@ -368,4 +647,27 @@ export function App() {
 
 export function useProfilesTabContext() {
   return useOutletContext<ProfilesTabContext>();
+}
+
+function parseMinecraftExitPayload(raw: unknown): MinecraftProcessExitedPayload | null {
+  if (raw && typeof raw === "object" && "profile_id" in raw) {
+    return raw as MinecraftProcessExitedPayload;
+  }
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw) as MinecraftProcessExitedPayload;
+    } catch {
+      const match = raw.match(/(-?\d+)/);
+      if (!match) return null;
+      const code = Number(match[1]);
+      return {
+        profile_id: "",
+        process_id: "",
+        exit_code: code,
+        success: code === 0,
+        process_metadata: null,
+      };
+    }
+  }
+  return null;
 }

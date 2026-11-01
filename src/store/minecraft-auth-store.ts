@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { MinecraftAuthService } from "../services/minecraft-auth-service";
+import { MinecraftAuthService, type MsaDeviceInfo } from "../services/minecraft-auth-service";
 import type { MinecraftAccount } from "../types/minecraft";
 import flagsmith from 'flagsmith';
 import { toast } from "react-hot-toast";
@@ -25,6 +25,26 @@ const identifyWithFlagsmith = (account: MinecraftAccount | null) => {
   }
 };
 
+async function loadAccountsIntoStore(
+  set: (partial: Partial<MinecraftAuthState>) => void,
+) {
+  const activeAccount = await MinecraftAuthService.getActiveAccount();
+  const accounts = await MinecraftAuthService.getAccounts();
+  const updatedAccounts = accounts
+    .filter((account) => Boolean(account.id))
+    .map((account) => ({
+      ...account,
+      active: activeAccount ? account.id === activeAccount.id : false,
+    }));
+  set({
+    accounts: updatedAccounts,
+    activeAccount,
+    isLoading: false,
+    error: null,
+  });
+  identifyWithFlagsmith(activeAccount);
+}
+
 interface MinecraftAuthState {
   accounts: MinecraftAccount[];
   activeAccount: MinecraftAccount | null;
@@ -32,7 +52,10 @@ interface MinecraftAuthState {
   error: string | null;
 
   initializeAccounts: () => Promise<void>;
-  addAccount: () => Promise<void>;
+  addAccount: (onDevice?: (info: MsaDeviceInfo) => void) => Promise<void>;
+  createOfflineAccount: (username: string) => Promise<MinecraftAccount>;
+  loginPixelAccount: (username: string, password: string) => Promise<MinecraftAccount>;
+  reservePixelAccount: (username: string, password: string) => Promise<MinecraftAccount>;
   removeAccount: (accountId: string) => Promise<void>;
   setActiveAccount: (accountId: string) => Promise<void>;
 }
@@ -46,22 +69,7 @@ export const useMinecraftAuthStore = create<MinecraftAuthState>((set, get) => ({
   initializeAccounts: async () => {
     try {
       set({ isLoading: true, error: null });
-
-      const accounts = await MinecraftAuthService.getAccounts();
-
-      const activeAccount = await MinecraftAuthService.getActiveAccount();
-
-      const updatedAccounts = accounts.map((account) => ({
-        ...account,
-        active: activeAccount ? account.id === activeAccount.id : false,
-      }));
-
-      set({
-        accounts: updatedAccounts,
-        activeAccount,
-        isLoading: false,
-      });
-      identifyWithFlagsmith(activeAccount);
+      await loadAccountsIntoStore(set);
     } catch (error) {
       console.error("Failed to initialize accounts:", error);
       set({
@@ -72,71 +80,85 @@ export const useMinecraftAuthStore = create<MinecraftAuthState>((set, get) => ({
     }
   },
 
-  addAccount: async () => {
+  loginPixelAccount: async (username, password) => {
     set({ isLoading: true, error: null });
-
-    const fullProcessPromise = (async () => {
-      // Step 1: Login
-      const newAccount = await MinecraftAuthService.beginLogin();
-      if (!newAccount) {
-        // This will be caught by toast.promise and the try/catch block
-        throw new Error("Login cancelled by user.");
-      }
-
-      // Step 2: Get all data needed for the state update
-      const accounts = await MinecraftAuthService.getAccounts();
-      const activeAccount = await MinecraftAuthService.getActiveAccount();
-
-      identifyWithFlagsmith(activeAccount);
-
-      // Return a payload with all data needed for the success toast and the final state update
-      return { newAccount, accounts, activeAccount };
-    })();
-
-    toast.promise(
-      fullProcessPromise,
-      {
-        loading: "Please sign in via your browser...",
-        success: ({ newAccount }) =>
-          `Account '${newAccount.username}' added successfully.`,
-        error: (err) => err.message,
-      },
-      {
-        loading: {
-          duration: 50000,
-        },
-        success: {
-          duration: 1500,
-        },
-        error: {
-          duration: 1500,
-        },
-      },
-    );
-
     try {
-      const { accounts, activeAccount } = await fullProcessPromise;
-
-      // Now, after the toast has finished, update the state in one go.
-      const updatedAccounts = accounts.map((account) => ({
-        ...account,
-        active: activeAccount ? account.id === activeAccount.id : false,
-      }));
-
+      const created = await MinecraftAuthService.loginPixelAccount(username, password);
+      await loadAccountsIntoStore(set);
+      return created;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       set({
-        accounts: updatedAccounts,
-        activeAccount,
-        error: null,
+        error: `Failed to login Pixel account: ${errorMessage}`,
+        isLoading: false,
       });
+      throw error;
+    }
+  },
+
+  reservePixelAccount: async (username, password) => {
+    set({ isLoading: true, error: null });
+    try {
+      const created = await MinecraftAuthService.reservePixelAccount(username, password);
+      await loadAccountsIntoStore(set);
+      return created;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      set({
+        error: `Failed to reserve Pixel account: ${errorMessage}`,
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  createOfflineAccount: async (username: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const created = await MinecraftAuthService.createOfflineAccount(username);
+      await loadAccountsIntoStore(set);
+      return created;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      // The toast handles displaying the error. We just log it and set state if it's a critical error.
+      set({
+        error: `Failed to create offline account: ${errorMessage}`,
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  addAccount: async (onDevice) => {
+    set({ isLoading: true, error: null });
+    const toastId = "msa-login";
+
+    try {
+      toast.loading("Conectando con Microsoft…", { id: toastId, duration: 60000 });
+      const newAccount = await MinecraftAuthService.beginLogin((info) => {
+        onDevice?.(info);
+        toast.loading(
+          `Código: ${info.user_code}  —  abrí microsoft.com/link`,
+          { id: toastId, duration: 120000 },
+        );
+      });
+      if (!newAccount) {
+        throw new Error("Login cancelled by user.");
+      }
+
+      await loadAccountsIntoStore(set);
+      toast.success(`Cuenta '${newAccount.username}' agregada.`, { id: toastId, duration: 2000 });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       if (!errorMessage.includes("cancelled by user")) {
         console.error("Failed to add account:", error);
         set({ error: `Failed to add account: ${errorMessage}` });
+        toast.error(errorMessage, { id: toastId, duration: 2500 });
+        throw error;
       } else {
         console.log("Account add cancelled by user.");
+        toast.dismiss(toastId);
       }
     } finally {
       set({ isLoading: false });
@@ -146,26 +168,8 @@ export const useMinecraftAuthStore = create<MinecraftAuthState>((set, get) => ({
   removeAccount: async (accountId: string) => {
     try {
       set({ isLoading: true, error: null });
-      const wasActive = get().activeAccount?.id === accountId;
-
       await MinecraftAuthService.removeAccount(accountId);
-
-      const accounts = await MinecraftAuthService.getAccounts();
-      const activeAccount = await MinecraftAuthService.getActiveAccount();
-
-      const updatedAccounts = accounts.map((account) => ({
-        ...account,
-        active: activeAccount ? account.id === activeAccount.id : false,
-      }));
-
-      set({
-        accounts: updatedAccounts,
-        activeAccount,
-        isLoading: false,
-      });
-      if (wasActive) {
-        identifyWithFlagsmith(activeAccount);
-      }
+      await loadAccountsIntoStore(set);
     } catch (error) {
       console.error("Failed to remove account:", error);
       set({
@@ -180,24 +184,21 @@ export const useMinecraftAuthStore = create<MinecraftAuthState>((set, get) => ({
       set({ isLoading: true, error: null });
 
       await MinecraftAuthService.setActiveAccount(accountId);
-
-      const activeAccount = await MinecraftAuthService.getActiveAccount();
-
-      const updatedAccounts = get().accounts.map((account) => ({
-        ...account,
-        active: account.id === accountId,
-      }));
-
-      set({
-        accounts: updatedAccounts,
-        activeAccount,
-        isLoading: false,
-      });
-      identifyWithFlagsmith(activeAccount);
+      await loadAccountsIntoStore(set);
     } catch (error) {
       console.error("Failed to set active account:", error);
+      const message =
+        error instanceof Error ? error.message : String(error);
+      try {
+        await loadAccountsIntoStore(set);
+      } catch {
+        // keep the original error if reload also fails
+      }
+      const stillActive = get().activeAccount;
+      const missing =
+        /cuenta no encontrada|not found/i.test(message) && !!stillActive;
       set({
-        error: `Failed to set active account: ${error instanceof Error ? error.message : String(error)}`,
+        error: missing ? null : `Failed to set active account: ${message}`,
         isLoading: false,
       });
     }

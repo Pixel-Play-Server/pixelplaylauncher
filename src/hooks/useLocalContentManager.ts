@@ -356,6 +356,9 @@ export function useLocalContentManager<T extends LocalContentItem>({
       };
       const fetchedBackendItems = await getLocalContent(serviceParams) as ProfileLocalContentItem[];
       console.log(`[${contentType}] Phase 1: Raw items from getLocalContent`, new Date().toISOString(), fetchedBackendItems);
+      if (!Array.isArray(fetchedBackendItems)) {
+        throw new Error(`get_local_content returned unexpected payload (${typeof fetchedBackendItems})`);
+      }
 
       const mappedItemsToFrontend = fetchedBackendItems.map(item => mapBackendItemToFrontendType<T>(item));
       const processedBasicItems = mappedItemsToFrontend.map(item => {
@@ -398,7 +401,10 @@ export function useLocalContentManager<T extends LocalContentItem>({
       };
       const fetchedBackendItemsWithHashes = await getLocalContent(serviceParams) as ProfileLocalContentItem[];
       console.log(`[${contentType}] Phase 2: Raw items with hashes from getLocalContent`, new Date().toISOString(), fetchedBackendItemsWithHashes);
-      
+      if (!Array.isArray(fetchedBackendItemsWithHashes)) {
+        throw new Error(`get_local_content (hashes) returned unexpected payload (${typeof fetchedBackendItemsWithHashes})`);
+      }
+
       const mappedItemsToFrontend = fetchedBackendItemsWithHashes.map(item => mapBackendItemToFrontendType<T>(item));
 
       setItems(currentItems =>
@@ -477,11 +483,15 @@ export function useLocalContentManager<T extends LocalContentItem>({
           const modrinthVersionsMap = await ModrinthService.getVersionsByHashes(hashesToFetchModrinthDetailsFor!);
           if (!isMounted) return;
           console.log(`[${contentType}] Phase 3: Modrinth data received`, new Date().toISOString(), modrinthVersionsMap);
+          if (!modrinthVersionsMap || typeof modrinthVersionsMap !== "object") {
+            return;
+          }
           setItems(currentItems =>
             currentItems.map(item => {
               if (item.sha1_hash && modrinthVersionsMap[item.sha1_hash]) {
                 const modrinthVersion = modrinthVersionsMap[item.sha1_hash];
-                const primaryFile = modrinthVersion.files.find(f => f.primary) || modrinthVersion.files[0];
+                const files = Array.isArray(modrinthVersion?.files) ? modrinthVersion.files : [];
+                const primaryFile = files.find(f => f.primary) || files[0];
                 const newModrinthInfo: ProfileGenericModrinthInfo | null = primaryFile ? {
                   project_id: modrinthVersion.project_id,
                   version_id: modrinthVersion.id,
@@ -498,8 +508,7 @@ export function useLocalContentManager<T extends LocalContentItem>({
         } catch (modrinthError) {
           if (!isMounted) return;
           console.warn(`[${contentType}] Phase 3: Failed to fetch Modrinth details by hashes:`, modrinthError);
-          const errorMsg = modrinthError instanceof Error ? modrinthError.message : String(modrinthError);
-          setError(prevError => prevError ? `${prevError}; Failed to fetch Modrinth details (${errorMsg})` : `Failed to fetch Modrinth details (${errorMsg})`);
+          // Keep the local file list visible. Hash lookup is enrichment, not a hard failure.
         } finally {
           if (isMounted) { // Ensure component is still mounted before setting state
             setIsFetchingModrinthDetailsState(false);

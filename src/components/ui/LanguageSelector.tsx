@@ -35,7 +35,8 @@ export function LanguageSelector({ className }: LanguageSelectorProps) {
     }
   };
 
-  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+  const resolvedLanguage = (i18n.resolvedLanguage || i18n.language || "es").split("-")[0];
+  const currentLanguage = languages.find(lang => lang.code === resolvedLanguage) || languages[0];
 
   const languageOptions = languages.map(lang => ({
     value: lang.code,
@@ -46,7 +47,7 @@ export function LanguageSelector({ className }: LanguageSelectorProps) {
   return (
     <Select
       variant="flat"
-      value={i18n.language}
+      value={currentLanguage.code}
       onChange={handleLanguageChange}
       options={languageOptions}
       className={className}

@@ -25,12 +25,16 @@ import UnifiedService from "../../services/unified-service";
 import type { UnifiedModpackVersionsResponse } from "../../types/unified";
 import { useProfileDuplicateStore } from "../../store/profile-duplicate-store";
 import { useProfileLaunch } from "../../hooks/useProfileLaunch.tsx";
+import { useTranslation } from "react-i18next";
 
 import { WorldsTab } from "./detail/WorldsTab";
 import { ScreenshotsTab } from "./detail/ScreenshotsTab";
 import { LogsTab } from "./detail/LogsTab";
 import type { LocalContentItem } from "../../hooks/useLocalContentManager";
 import { ModpackDebugInfo } from "../../debug";
+import type { pixelplayModpacksConfig } from "../../types/pixelplayPacks";
+import { PackVersionMeta } from "./PackVersionMeta";
+import { isProfileAuthorProtected } from "../../utils/author-protection";
 
 type MainTabType = "content" | "worlds" | "logs" | "screenshots";
 type ContentTabType = "mods" | "resourcepacks" | "datapacks" | "shaderpacks" | "nrc";
@@ -47,10 +51,13 @@ export function ProfileDetailViewV2({
   onEdit,
 }: ProfileDetailViewV2Props) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [currentProfile, setCurrentProfile] = useState<Profile>(profile);
   const [activeMainTab, setActiveMainTab] = useState<MainTabType>("content");
   const [activeContentTab, setActiveContentTab] = useState<ContentTabType>("mods");
+  const [packsConfig, setPacksConfig] = useState<pixelplayModpacksConfig | null>(null);
   const accentColor = useThemeStore((state) => state.accentColor);
+  const isAuthorProtected = isProfileAuthorProtected(currentProfile, packsConfig);
 
   // Context menu state
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -91,6 +98,25 @@ export function ProfileDetailViewV2({
     },
   });
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!currentProfile.selected_pixelplay_pack_id) {
+        setPacksConfig(null);
+        return;
+      }
+      try {
+        const config = await ProfileService.getpixelplayPacks();
+        if (!cancelled) setPacksConfig(config);
+      } catch {
+        if (!cancelled) setPacksConfig(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProfile.selected_pixelplay_pack_id]);
+
   // Handler for world/server launch requests from WorldsTab
   const handleLaunchRequest = useCallback(async (params: {
     profileId: string;
@@ -120,38 +146,42 @@ export function ProfileDetailViewV2({
   const contextMenuItems: ContextMenuItem[] = [
     {
       id: "edit",
-      label: "Edit Profile",
+      label: t("profile.editProfile"),
       icon: "solar:settings-bold",
       onClick: () => onEdit(),
     },
     {
       id: "duplicate",
-      label: "Duplicate",
+      label: t("profile.duplicate"),
       icon: "solar:copy-bold",
       onClick: () => handleDuplicateProfile(),
     },
     {
       id: "export",
-      label: "Export",
+      label: t("common.export"),
       icon: "solar:download-bold",
       onClick: () => handleOpenExportModal(),
     },
     // Show modpack versions only if modpack info exists and versions are loaded
     ...(currentProfile.modpack_info && modpackVersions ? [{
       id: "modpack-versions",
-      label: "Modpack Versions",
+      label: t("profile.modpackVersions"),
       icon: "solar:archive-bold",
       onClick: () => handleOpenModpackVersionsModal(),
     }] : []),
-    {
-      id: "open-folder",
-      label: "Open Folder",
-      icon: "solar:folder-bold",
-      onClick: () => handleOpenFolder(),
-    },
+    ...(!isAuthorProtected
+      ? [
+          {
+            id: "open-folder",
+            label: t("profiles.openFolder"),
+            icon: "solar:folder-bold",
+            onClick: () => handleOpenFolder(),
+          } as ContextMenuItem,
+        ]
+      : []),
     {
       id: "delete",
-      label: "Delete",
+      label: t("common.delete"),
       icon: "solar:trash-bin-trash-bold",
       destructive: true,
       separator: true, // Trennstrich vor Delete
@@ -234,6 +264,10 @@ export function ProfileDetailViewV2({
 
   // Handler for opening profile folder
   const handleOpenFolder = useCallback(async () => {
+    if (isAuthorProtected) {
+      toast.error(t("profiles.authorProtection.folderBlocked"));
+      return;
+    }
     console.log("[ProfileDetailViewV2] handleOpenFolder called for:", currentProfile.name);
     const openPromise = ProfileService.openProfileFolder(currentProfile.id);
     toast.promise(openPromise, {
@@ -245,7 +279,7 @@ export function ProfileDetailViewV2({
         return `Failed to open folder: ${message}`;
       },
     });
-  }, [currentProfile, profile.id]);
+  }, [currentProfile, profile.id, isAuthorProtected, t]);
 
   // Handler for duplicating profile
   const handleDuplicateProfile = useCallback(() => {
@@ -341,10 +375,10 @@ export function ProfileDetailViewV2({
 
   // Main tabs configuration
   const mainTabs: GroupTab[] = [
-    { id: "content", name: "Content", count: 0, icon: "solar:widget-bold" },
-    { id: "worlds", name: "Worlds", count: 0, icon: "solar:planet-bold" },
-    { id: "screenshots", name: "Screenshots", count: 0, icon: "solar:camera-bold" },
-    { id: "logs", name: "Logs", count: 0, icon: "solar:code-bold" },
+    { id: "content", name: t("profile.content"), count: 0, icon: "solar:widget-bold" },
+    { id: "worlds", name: t("profile.worlds"), count: 0, icon: "solar:planet-bold" },
+    { id: "screenshots", name: t("profile.screenshots"), count: 0, icon: "solar:camera-bold" },
+    { id: "logs", name: t("profile.logs"), count: 0, icon: "solar:code-bold" },
   ];
 
 
@@ -353,30 +387,30 @@ export function ProfileDetailViewV2({
   const actionButtons: ActionButton[] = [
     {
       id: "back",
-      label: "BACK",
+      label: t("common.back").toUpperCase(),
       icon: "solar:arrow-left-bold",
-      tooltip: "Back to profiles",
+      tooltip: t("profile.backToProfiles"),
       onClick: () => onClose(),
     },
     {
       id: "play",
-      label: isLaunching ? "STOP" : "PLAY",
+      label: isLaunching ? t("profiles.card.stop") : t("profiles.card.play"),
       icon: isLaunching ? "solar:stop-bold" : "solar:play-bold",
-      tooltip: isLaunching ? "Stop playing" : "Start playing",
+      tooltip: isLaunching ? t("profile.stopPlaying") : t("profile.startPlaying"),
       onClick: handleLaunch,
     },
     {
       id: "settings",
-      label: "SETTINGS",
+      label: t("profiles.card.settings"),
       icon: "solar:settings-bold",
-      tooltip: profile.is_standard_version ? "Java Settings" : "Edit profile",
+      tooltip: profile.is_standard_version ? t("profile.javaSettings") : t("profile.editProfile"),
       onClick: () => onEdit(),
     },
     {
       id: "more",
       label: null,
       icon: "solar:menu-dots-bold",
-      tooltip: "More options",
+      tooltip: t("profile.moreOptions"),
       onClick: (event?: React.MouseEvent<HTMLButtonElement>) => {
         event?.preventDefault();
         event?.stopPropagation();
@@ -475,6 +509,7 @@ export function ProfileDetailViewV2({
                         </div>
                       </>
                     )}
+                    <PackVersionMeta packId={currentProfile.selected_pixelplay_pack_id} size="md" />
 
                     {/* Profile Group (if exists) */}
                     {profile.group && (
@@ -520,7 +555,7 @@ export function ProfileDetailViewV2({
                 onClose={handleCancelDelete}
                 onConfirm={handleConfirmDelete}
                 isDeleting={isDeleting}
-                title="Delete Profile"
+                title={t("profile.deleteProfile")}
                 message={
                   <p className="text-white/80 font-minecraft-ten">
                     Are you sure you want to permanently delete the profile{" "}
@@ -562,9 +597,9 @@ export function ProfileDetailViewV2({
                     profile={currentProfile}
                     contentType="Mod"
                     getDisplayFileName={getGenericDisplayFileName}
-                    itemTypeName="mod"
-                    itemTypeNamePlural="mods"
-                    addContentButtonText="Add Mods"
+                    itemTypeName={t("profile.itemMod")}
+                    itemTypeNamePlural={t("profile.itemMods")}
+                    addContentButtonText={t("profile.addMods")}
                     emptyStateIconOverride="solar:bolt-bold-duotone"
                     onRefreshRequired={handleRefresh}
                     onBrowseContentRequest={handleBrowseContent}
@@ -576,9 +611,9 @@ export function ProfileDetailViewV2({
                     profile={currentProfile}
                     contentType="ResourcePack"
                     getDisplayFileName={getGenericDisplayFileName}
-                    itemTypeName="resource pack"
-                    itemTypeNamePlural="resource packs"
-                    addContentButtonText="Add Resource Packs"
+                    itemTypeName={t("profile.itemResourcePack")}
+                    itemTypeNamePlural={t("profile.itemResourcePacks")}
+                    addContentButtonText={t("profile.addResourcePacks")}
                     emptyStateIconOverride="solar:gallery-bold-duotone"
                     onRefreshRequired={handleRefresh}
                     onBrowseContentRequest={handleBrowseContent}
@@ -590,9 +625,9 @@ export function ProfileDetailViewV2({
                     profile={currentProfile}
                     contentType="DataPack"
                     getDisplayFileName={getGenericDisplayFileName}
-                    itemTypeName="data pack"
-                    itemTypeNamePlural="data packs"
-                    addContentButtonText="Add Data Packs"
+                    itemTypeName={t("profile.itemDataPack")}
+                    itemTypeNamePlural={t("profile.itemDataPacks")}
+                    addContentButtonText={t("profile.addDataPacks")}
                     emptyStateIconOverride="solar:database-bold-duotone"
                     onRefreshRequired={handleRefresh}
                     onBrowseContentRequest={handleBrowseContent}
@@ -604,9 +639,9 @@ export function ProfileDetailViewV2({
                     profile={currentProfile}
                     contentType="ShaderPack"
                     getDisplayFileName={getGenericDisplayFileName}
-                    itemTypeName="shader pack"
-                    itemTypeNamePlural="shader packs"
-                    addContentButtonText="Add Shader Packs"
+                    itemTypeName={t("profile.itemShaderPack")}
+                    itemTypeNamePlural={t("profile.itemShaderPacks")}
+                    addContentButtonText={t("profile.addShaderPacks")}
                     emptyStateIconOverride="solar:sun-bold-duotone"
                     onRefreshRequired={handleRefresh}
                     onBrowseContentRequest={handleBrowseContent}
@@ -618,9 +653,9 @@ export function ProfileDetailViewV2({
                     profile={currentProfile}
                     contentType="pixelplayMod"
                     getDisplayFileName={getGenericDisplayFileName}
-                    itemTypeName="pixelplay Mod"
-                    itemTypeNamePlural="pixelplay Mods"
-                    addContentButtonText="Add pixelplay Mods"
+                    itemTypeName={t("profile.pixelplayMods")}
+                    itemTypeNamePlural={t("profile.pixelplayMods")}
+                    addContentButtonText={t("profile.addPixelplayMods")}
                     emptyStateIconOverride="solar:shield-check-bold-duotone"
                     onRefreshRequired={async () => {
                       // Force refresh of profile data when pixelplay pack changes
@@ -643,7 +678,7 @@ export function ProfileDetailViewV2({
               <div className="w-64 flex-shrink-0 border-l border-white/10 pl-4">
                 <div className="space-y-2">
                   <div className="text-white/70 text-sm font-minecraft-ten uppercase tracking-wide mb-4">
-                    Content Types
+                    {t("profile.contentTypes")}
                   </div>
 
                   <button
@@ -655,7 +690,7 @@ export function ProfileDetailViewV2({
                   >
                     <Icon icon="solar:widget-bold" className="w-5 h-5 flex-shrink-0" />
                     <span className="font-minecraft-ten text-sm uppercase tracking-wide">
-                      Mods
+                      {t("profile.mods")}
                     </span>
                   </button>
 
@@ -668,7 +703,7 @@ export function ProfileDetailViewV2({
                   >
                     <Icon icon="solar:palette-bold" className="w-5 h-5 flex-shrink-0" />
                     <span className="font-minecraft-ten text-sm uppercase tracking-wide">
-                      Resource Packs
+                      {t("profile.resourcePacks")}
                     </span>
                   </button>
 
@@ -681,7 +716,7 @@ export function ProfileDetailViewV2({
                   >
                     <Icon icon="solar:database-bold" className="w-5 h-5 flex-shrink-0" />
                     <span className="font-minecraft-ten text-sm uppercase tracking-wide">
-                      Data Packs
+                      {t("profile.itemDataPacks")}
                     </span>
                   </button>
 
@@ -694,7 +729,7 @@ export function ProfileDetailViewV2({
                   >
                     <Icon icon="solar:sun-bold" className="w-5 h-5 flex-shrink-0" />
                     <span className="font-minecraft-ten text-sm uppercase tracking-wide">
-                      Shader Packs
+                      {t("profile.shaderPacks")}
                     </span>
                   </button>
                 </div>

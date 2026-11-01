@@ -36,6 +36,7 @@ export function ModLoaderStep({ profile, updateProfile }: ModLoaderStepProps) {
     forge: false,
     quilt: false,
     neoforge: false,
+    horizon: false,
   });
   const accentColor = useThemeStore((state) => state.accentColor);
   const isBackgroundAnimationEnabled = useThemeStore(
@@ -107,6 +108,7 @@ export function ModLoaderStep({ profile, updateProfile }: ModLoaderStepProps) {
         forge: false,
         quilt: false,
         neoforge: false,
+        horizon: false,
       };
 
       try {

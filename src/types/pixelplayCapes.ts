@@ -4,6 +4,7 @@
 // Define interfaces for cape data
 export interface CosmeticCape {
   _id: string; // String in Rust, renamed from "_id" in JSON
+  name?: string;
   accepted: boolean; // bool in Rust
   uses: number; // i32 in Rust
   firstSeen: string; // Uuid in Rust, renamed from "firstSeen" in JSON

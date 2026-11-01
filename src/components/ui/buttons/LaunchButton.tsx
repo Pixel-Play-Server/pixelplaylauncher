@@ -6,7 +6,8 @@ import { listen, Event as TauriEvent } from "@tauri-apps/api/event";
 import { EventPayload as FrontendEventPayload, EventType as FrontendEventType } from "../../../types/events";
 import * as ProcessService from "../../../services/process-service";
 import * as ProfileService from "../../../services/profile-service";
-import { useLaunchStateStore, LaunchState } from "../../../store/launch-state-store";
+import { useLaunchStateStore } from "../../../store/launch-state-store";
+import i18n from "../../../lib/i18n";
 import { 
   getAccessibilityProps,
   type ComponentSize,
@@ -75,7 +76,7 @@ export function LaunchButton({
               `[LaunchButton ${id}] Initial check: Backend says profile is launching. Updating store.`,
             );
             initiateButtonLaunch(id);
-            setButtonStatusMessage(id, "Launching...");
+            setButtonStatusMessage(id, "launcher.status.launching_minecraft");
           }
         })
         .catch((err) => {
@@ -98,22 +99,25 @@ export function LaunchButton({
       if (payload.target_id === id) {
         if (payload.event_type === FrontendEventType.LaunchSuccessful) {
           console.log(`[LaunchButton ${id}] Event: LaunchSuccessful`);
-          toast.success(`Profile '${name}' launched successfully!`);
+          toast.success(i18n.t("launcher.launchSuccessNamed", { name }));
           finalizeButtonLaunch(id);
-          setButtonStatusMessage(id, "Launched!");
+          setButtonStatusMessage(id, "launcher.status.started");
           setTimeout(() => setButtonStatusMessage(id, null), 3000);
           stopPolling();
         } else if (payload.event_type === FrontendEventType.Error) {
           const errorMessage =
-            payload.message || "An unknown error occurred during launch.";
+            payload.message || i18n.t("launcher.launchFailed");
           console.error(
             `[LaunchButton ${id}] Event: Error - ${errorMessage}`,
           );
           toast.error(errorMessage);
           setLaunchError(id, errorMessage);
           stopPolling();
-        } else if (payload.message) {
-          setButtonStatusMessage(id, payload.message);
+        } else if (payload.event_type) {
+          const msg = payload.message && String(payload.message).trim() !== ""
+            ? payload.message
+            : `launcher.status.${payload.event_type}`;
+          setButtonStatusMessage(id, msg);
         }
       }
     };
@@ -200,9 +204,9 @@ export function LaunchButton({
 
     if (currentProfileState.isButtonLaunching) {
       try {
-        setButtonStatusMessage(id, "Attempting to abort...");
+        setButtonStatusMessage(id, "launcher.status.stopping");
         await ProcessService.abort(id);
-        toast.success("Launch cancellation requested.");
+        toast.success(i18n.t("launcher.launchCancelled"));
         finalizeButtonLaunch(id);
       } catch (error) {
         console.error("Failed to request launch cancellation:", error);

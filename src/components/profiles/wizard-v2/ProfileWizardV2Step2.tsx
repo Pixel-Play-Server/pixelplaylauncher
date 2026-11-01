@@ -41,6 +41,7 @@ export function ProfileWizardV2Step2({
   const [showNoVersionsFound, setShowNoVersionsFound] = useState(false);
 
   const modLoaders: { key: ModLoader; label: string; icon: string; backgroundImage: string }[] = [
+    { key: "horizon", label: "Horizon (26.3)", icon: "solar:planet-bold", backgroundImage: "/icons/minecraft.png" },
     { key: "vanilla", label: "Vanilla", icon: "solar:gamepad-bold", backgroundImage: "/icons/minecraft.png" },
     { key: "fabric", label: "Fabric", icon: "solar:box-bold", backgroundImage: "/icons/fabric.png" },
     { key: "forge", label: "Forge", icon: "solar:hammer-bold", backgroundImage: "/icons/forge.png" },
@@ -51,7 +52,7 @@ export function ProfileWizardV2Step2({
   // Fetch versions when loader changes
   useEffect(() => {
     const fetchVersions = async () => {
-      if (selectedLoader === "vanilla") {
+      if (selectedLoader === "vanilla" || selectedLoader === "horizon") {
         setLoaderVersions([]);
         setSelectedLoaderVersion(null);
         setShowLoadingIndicator(false);
@@ -205,10 +206,10 @@ export function ProfileWizardV2Step2({
 
         {/* Version Selection */}
         <div className="h-20 flex items-center flex-shrink-0">
-          {selectedLoader === "vanilla" ? (
+          {(selectedLoader === "vanilla" || selectedLoader === "horizon") ? (
             <div className="text-center w-full">
               <p className="text-lg font-minecraft text-white/50 lowercase">
-                no additional version required
+                {selectedLoader === "horizon" ? "Horizon runs Minecraft 26.3 (native Rust engine)" : "no additional version required"}
               </p>
             </div>
           ) : showLoadingIndicator ? (
@@ -258,7 +259,7 @@ export function ProfileWizardV2Step2({
       <Button
         variant="default"
         onClick={handleNext}
-        disabled={loading || loadingVersions || (selectedLoader !== "vanilla" && !selectedLoaderVersion)}
+        disabled={loading || loadingVersions || (selectedLoader !== "vanilla" && selectedLoader !== "horizon" && !selectedLoaderVersion)}
         size="md"
         className="min-w-[180px] text-xl"
         icon={<Icon icon="solar:arrow-right-bold" className="w-5 h-5" />}

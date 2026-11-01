@@ -17,6 +17,8 @@ import { ProfileIcon } from "./ProfileIcon";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { cn } from "../../lib/utils";
 import { useLaunchStateStore } from "../../store/launch-state-store";
+import { useTranslation } from "react-i18next";
+import { formatLaunchStatus } from "../../utils/launch-status";
 
 interface ProfileCardProps {
   profile: Profile;
@@ -39,6 +41,7 @@ export function ProfileCard({
   interactionMode = "launch",
   onSettingsNavigation,
 }: ProfileCardProps) {
+  const { t } = useTranslation();
   const accentColor = useThemeStore((state) => state.accentColor);
   const navigate = useNavigate();
 
@@ -412,7 +415,7 @@ export function ProfileCard({
                   isCloning
                     ? "Cloning profile..."
                     : isButtonLaunching
-                      ? buttonStatusMessage || "Starting..."
+                      ? formatLaunchStatus(t, buttonStatusMessage)
                       : `${profile.loader || "Vanilla"} - ${profile.game_version}`
                 }
               >
@@ -420,7 +423,7 @@ export function ProfileCard({
                   <span className="opacity-70">Cloning profile...</span>
                 ) : isButtonLaunching ? (
                   <span className="opacity-70">
-                    {buttonStatusMessage || "Starting..."}
+                    {formatLaunchStatus(t, buttonStatusMessage)}
                   </span>
                 ) : (
                   <>

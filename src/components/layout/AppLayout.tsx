@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, lazy, Suspense, useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { Icon } from "@iconify/react";
 
@@ -14,35 +14,28 @@ import {
   useBackgroundEffectStore,
 } from "../../store/background-effect-store";
 import { useQualitySettingsStore } from "../../store/quality-settings-store";
-import { MatrixRainEffect } from ".././effects/MatrixRainEffect";
-import { EnchantmentParticlesEffect } from ".././effects/EnchantmentParticlesEffect";
-import { NebulaWaves } from ".././effects/NebulaWaves";
-import { NebulaParticles } from ".././effects/NebulaParticles";
-import { NebulaGrid } from ".././effects/NebulaGrid";
-import { NebulaVoxels } from ".././effects/NebulaVoxels";
-import { NebulaLightning } from ".././effects/NebulaLightning";
-import { NebulaLiquidChrome } from ".././effects/NebulaLiquidChrome";
-import { RetroGridEffect } from "../effects/RetroGridEffect";
-import PlainBackground from "../effects/PlainBackground";
-import { OGBallsEffect } from "../effects/OGBallsEffect";
-import { OGBothEffect } from "../effects/OGBothEffect";
 import * as ConfigService from "../../services/launcher-config-service";
 import { SocialsModal } from "../modals/SocialsModal";
 import { ProfileWizardV2Modal } from "../modals/ProfileWizardV2Modal";
 import { ProfileSettingsModal } from "../modals/ProfileSettingsModal";
 import { ProfileDuplicateModal } from "../modals/ProfileDuplicateModal";
 import { exit, relaunch } from '@tauri-apps/plugin-process';
+import { useTranslation } from "react-i18next";
 
-const navItems = [
-  { id: "play", icon: "solar:play-bold", label: "Play" },
-  { id: "profiles", icon: "solar:user-id-bold", label: "Profiles" },
-  { id: "mods", icon: "solar:widget-bold", label: "Mods" },
-  { id: "skins", icon: "solar:emoji-funny-circle-bold", label: "Skins" },
-  { id: "settings", icon: "solar:settings-bold", label: "Settings" },
-];
+const MatrixRainEffect = lazy(() => import("../effects/MatrixRainEffect").then((m) => ({ default: m.MatrixRainEffect })));
+const EnchantmentParticlesEffect = lazy(() => import("../effects/EnchantmentParticlesEffect").then((m) => ({ default: m.EnchantmentParticlesEffect })));
+const NebulaWaves = lazy(() => import("../effects/NebulaWaves").then((m) => ({ default: m.NebulaWaves })));
+const NebulaParticles = lazy(() => import("../effects/NebulaParticles").then((m) => ({ default: m.NebulaParticles })));
+const NebulaGrid = lazy(() => import("../effects/NebulaGrid").then((m) => ({ default: m.NebulaGrid })));
+const NebulaVoxels = lazy(() => import("../effects/NebulaVoxels").then((m) => ({ default: m.NebulaVoxels })));
+const NebulaLightning = lazy(() => import("../effects/NebulaLightning").then((m) => ({ default: m.NebulaLightning })));
+const NebulaLiquidChrome = lazy(() => import("../effects/NebulaLiquidChrome").then((m) => ({ default: m.NebulaLiquidChrome })));
+const PlainBackground = lazy(() => import("../effects/PlainBackground"));
+const OGBallsEffect = lazy(() => import("../effects/OGBallsEffect").then((m) => ({ default: m.OGBallsEffect })));
+const OGBothEffect = lazy(() => import("../effects/OGBothEffect").then((m) => ({ default: m.OGBothEffect })));
 
 const appConfig = {
-  version: "v0.5.22",
+  version: "v6.0.0",
 };
 
 interface AppLayoutProps {
@@ -57,41 +50,29 @@ export function AppLayout({
   onNavChange,
 }: AppLayoutProps) {
   const launcherRef = useRef<HTMLDivElement>(null);
-  const backgroundPatternRef = useRef<HTMLDivElement>(null);
   const minimizeRef = useRef<HTMLDivElement>(null);
   const maximizeRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLDivElement>(null);
   const { currentEffect } = useBackgroundEffectStore();
   const { qualityLevel } = useQualitySettingsStore();
   const { isBackgroundAnimationEnabled, accentColor: themeAccentColor } = useThemeStore();
+  const { t } = useTranslation();
+  const navItems = [
+    { id: "play", icon: "solar:play-bold", label: t("navigation.play") },
+    { id: "profiles", icon: "solar:user-id-bold", label: t("navigation.profiles") },
+    { id: "mods", icon: "solar:widget-bold", label: t("navigation.mods") },
+    { id: "skins", icon: "solar:emoji-funny-circle-bold", label: t("navigation.skins") },
+    { id: "friends", icon: "solar:users-group-rounded-bold", label: t("navigation.friends") },
+    { id: "settings", icon: "solar:settings-bold", label: t("navigation.settings") },
+  ];
 
   const getComplementaryBackground = () => {
-    const hexToRgb = (hex: string) => {
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      return result
-        ? {
-            r: Number.parseInt(result[1], 16),
-            g: Number.parseInt(result[2], 16),
-            b: Number.parseInt(result[3], 16),
-          }
-        : { r: 34, g: 34, b: 34 };
-    };
-
-    const rgb = hexToRgb(themeAccentColor.value);
-
-    const darkR = Math.floor(rgb.r * 0.1);
-    const darkG = Math.floor(rgb.g * 0.1);
-    const darkB = Math.floor(rgb.b * 0.1);
-
-    const finalR = Math.min(darkR, 30);
-    const finalG = Math.min(darkG, 30);
-    const finalB = Math.min(darkB, 30);
-
-    return `rgb(${finalR}, ${finalG}, ${finalB})`;
+    // Deep near-black shell — avoid muddy mid-grey from accent*0.1
+    return "#0a0a0c";
   };
 
   const backgroundColor = getComplementaryBackground();
-
+  const accent = themeAccentColor.value;
   const getQualityParams = () => {
     switch (qualityLevel) {
       case "low":
@@ -109,19 +90,10 @@ export function AppLayout({
     const ctx = gsap.context(() => {
       gsap.from(launcherRef.current, {
         opacity: 0,
-        scale: 0.95,
-        duration: 0.8,
-        ease: "power3.out",
+        scale: 0.985,
+        duration: 0.3,
+        ease: "power2.out",
       });
-
-      if (backgroundPatternRef.current) {
-        gsap.to(backgroundPatternRef.current, {
-          backgroundPosition: "100% 100%",
-          duration: 120,
-          repeat: -1,
-          ease: "none",
-        });
-      }
     });
 
     const setupWindowControls = async () => {
@@ -278,14 +250,15 @@ export function AppLayout({
   return (
     <div
       ref={launcherRef}
-      className="h-screen w-full bg-black/50 backdrop-blur-lg border-2 overflow-hidden relative flex shadow-[0_0_25px_rgba(0,0,0,0.4)]"
+      className="h-screen w-full overflow-hidden relative flex border border-white/10"
       style={{
-        backgroundColor: backgroundColor,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundImage: `linear-gradient(to bottom right, ${backgroundColor}, rgba(0,0,0,0.9))`,
-        borderColor: `${themeAccentColor.value}30`,
-        boxShadow: `0 0 15px ${themeAccentColor.value}30, inset 0 0 10px ${themeAccentColor.value}20`,
+        backgroundColor,
+        backgroundImage: `
+          radial-gradient(ellipse 90% 70% at 18% 35%, ${accent}28 0%, transparent 55%),
+          radial-gradient(ellipse 70% 55% at 85% 75%, ${accent}16 0%, transparent 50%),
+          linear-gradient(165deg, #121218 0%, #07070a 55%, #050507 100%)
+        `,
+        boxShadow: `inset 0 0 80px rgba(0,0,0,0.45)`,
       }}
     >
       <BorderGlowEffects accentColor={themeAccentColor.value} />
@@ -306,7 +279,7 @@ export function AppLayout({
         />
 
         <div className="flex-1 relative overflow-hidden">
-          {renderBackgroundEffect()}
+          <Suspense fallback={null}>{renderBackgroundEffect()}</Suspense>
 
           <div className="relative z-10 h-full overflow-hidden custom-scrollbar">
             {children}
@@ -370,7 +343,7 @@ function HeaderBar({ minimizeRef, maximizeRef, closeRef }: HeaderBarProps) {
         setAppVersion(`v${fetchedVersion}`);
       } catch (error) {
         console.error("Failed to fetch app version:", error);
-        setAppVersion("v4.0.0");
+        setAppVersion("v5.0.2");
       }
     };
     fetchVersion();
@@ -378,22 +351,22 @@ function HeaderBar({ minimizeRef, maximizeRef, closeRef }: HeaderBarProps) {
 
   return (
     <div
-      className="h-20 flex-shrink-0 border-b-2 backdrop-blur-lg flex items-center justify-between px-8 z-10"
+      className="h-16 flex-shrink-0 border-b border-white/10 flex items-center justify-between px-6 z-10"
       style={{
-        borderColor: `${accentColor.value}40`,
-        backgroundColor: `rgba(${Number.parseInt(accentColor.value.slice(1, 3), 16)}, ${Number.parseInt(
-          accentColor.value.slice(3, 5),
-          16,
-        )}, ${Number.parseInt(accentColor.value.slice(5, 7), 16)}, 0.01)`,
+        borderColor: `${accentColor.value}33`,
+        background:
+          "linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(0,0,0,0.28))",
+        // Wails frameless drag region (replaces GNOME CSD titlebar)
+        ["--wails-draggable" as string]: "drag",
       }}
       data-tauri-drag-region
     >
       <div className="flex items-center gap-4" data-tauri-drag-region>
         <NavigationHistory />
 
-        <div className="flex flex-col items-start -mt-2.5">
+        <div className="flex flex-col items-start -mt-1.5">
           <h1
-            className="font-minecraft text-4xl tracking-wider text-white font-bold lowercase text-shadow"
+            className="font-minecraft text-3xl tracking-wider text-white font-bold lowercase text-shadow"
             data-tauri-drag-region
           >
             Pixel Play
@@ -404,7 +377,10 @@ function HeaderBar({ minimizeRef, maximizeRef, closeRef }: HeaderBarProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div
+        className="flex items-center gap-4"
+        style={{ ["--wails-draggable" as string]: "no-drag" }}
+      >
         <UserProfileBar />
 
         <WindowControls

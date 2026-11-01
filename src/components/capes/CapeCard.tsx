@@ -12,6 +12,7 @@ import { CapeImage } from "./CapeImage"; // Assuming we want to show a 2D previe
 import { Card } from "../ui/Card";
 import { cn } from "../../lib/utils";
 import { useCapeFavoritesStore } from "../../store/useCapeFavoritesStore";
+import { cosmeticCapeUrl } from "../../lib/pixelplayCdn";
 
 interface CapeCardProps {
   cape: CosmeticCape;
@@ -35,7 +36,7 @@ export function CapeCard({
   onDelete,
 }: CapeCardProps) {
   const { _id: capeHash, elytra, uses, firstSeen: creatorUuid } = cape;
-  const imageUrl = `https://cdn.norisk.gg/capes/prod/${capeHash}.png`;
+  const imageUrl = cosmeticCapeUrl(capeHash);
   const [creatorName, setCreatorName] = useState<string | null>(null);
 
   const accentColor = useThemeStore((state) => state.accentColor);

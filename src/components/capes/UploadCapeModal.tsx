@@ -9,6 +9,9 @@ import { Icon } from "@iconify/react";
 import { useThemeStore } from "../../store/useThemeStore";
 import { uploadCape } from "../../services/cape-service";
 import { toast } from "react-hot-toast";
+import { useMinecraftAuthStore } from "../../store/minecraft-auth-store";
+import { accountSkinUrl } from "../../lib/pixelplayCdn";
+import { useAccountSkinVariant } from "../../hooks/useAccountSkinVariant";
 
 interface UploadCapeModalProps {
   previewImageUrl: string;
@@ -71,6 +74,8 @@ export function UploadCapeModal({
   onCancelUpload
 }: UploadCapeModalProps) {
   const accentColor = useThemeStore((state) => state.accentColor);
+  const activeAccount = useMinecraftAuthStore((s) => s.activeAccount);
+  const skinVariant = useAccountSkinVariant();
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadWarning, setUploadWarning] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -159,7 +164,9 @@ export function UploadCapeModal({
         )}
         <div className="relative flex justify-center items-center mb-6 p-2 rounded-md aspect-[10/16] max-w-[200px] mx-auto">
           <SkinView3DWrapper
+            skinUrl={accountSkinUrl(activeAccount?.id, activeAccount?.username) || undefined}
             capeUrl={resizedCapeUrl || previewImageUrl}
+            skinVariant={skinVariant}
             className="w-full h-full"
             zoom={1.5}
             displayAsElytra={showElytraPreview}

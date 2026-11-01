@@ -30,15 +30,15 @@ import { useCapeFavoritesStore } from "../../store/useCapeFavoritesStore";
 import { useVanillaCapeStore } from "../../store/useVanillaCapeStore";
 import type { VanillaCape } from "../../types/vanillaCapes";
 import { useGlobalModal } from "../../hooks/useGlobalModal";
+import { useAccountSkinVariant } from "../../hooks/useAccountSkinVariant";
 import { preloadIcons } from "../../lib/icon-utils";
 import { deleteCape } from "../../services/cape-service";
 import { toast } from "react-hot-toast";
 import { UploadCapeModal } from "./UploadCapeModal";
 import { ConfirmDeletionModal } from "./ConfirmDeletionModal";
+import { cn } from "../../lib/utils";
 
-
-
-export function CapeBrowser(): JSX.Element {
+export function CapeBrowser({ embedded = false }: { embedded?: boolean }): JSX.Element {
   // Separate state for ALL capes and MY CAPES
   const [allCapes, setAllCapes] = useState<CosmeticCape[]>([]);
   const [myCapes, setMyCapes] = useState<CosmeticCape[]>([]);
@@ -99,12 +99,8 @@ export function CapeBrowser(): JSX.Element {
 
   // Computed equipped cape ID based on current tab
   const equippedCapeId = useMemo(() => {
-    if (filters.showVanillaOnly) {
-      return equippedCape?.id || null;
-    }
-    // For pixelplay capes, we don't have equipped state yet
-    return null;
-  }, [filters.showVanillaOnly, equippedCape]);
+    return equippedCape?.id || null;
+  }, [equippedCape]);
 
   const { showModal, hideModal } = useGlobalModal();
 
@@ -141,9 +137,13 @@ export function CapeBrowser(): JSX.Element {
       return allCapes;
     }
 
-    // For favorites, let CapeList handle the filtering - just provide all available capes
-    return filters.showOwnedOnly ? myCapes : allCapes;
-  }, [filters.showOwnedOnly, filters.showVanillaOnly, myCapes, allCapes, vanillaCapes, favoriteCapeIds, searchQuery]); // Add searchQuery to trigger re-render when search changes
+    if (filters.showOwnedOnly) {
+      return myCapes;
+    }
+
+    // All: official/community Pixel Play + vanilla owned
+    return [...allCapes, ...vanillaCapes];
+  }, [filters.showOwnedOnly, filters.showVanillaOnly, myCapes, allCapes, vanillaCapes, favoriteCapeIds, searchQuery]);
 
   const paginationInfo = useMemo(() => {
     // When searching, always use allPagination for search results
@@ -195,6 +195,7 @@ export function CapeBrowser(): JSX.Element {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isLoadingRef = useRef(false);
   const { activeAccount } = useMinecraftAuthStore();
+  useAccountSkinVariant();
 
   useEffect(() => {
     preloadIcons(["solar:add-square-bold-duotone"]);
@@ -218,6 +219,9 @@ export function CapeBrowser(): JSX.Element {
         setAllPagination(response.pagination);
       } catch (error) {
         console.error("Failed to load ALL capes:", error);
+        toast.error(
+          error instanceof Error ? error.message : String(error),
+        );
       } finally {
         setIsLoadingAll(false);
       }
@@ -254,12 +258,12 @@ export function CapeBrowser(): JSX.Element {
     loadMyCapes();
   }, [activeAccount]); // Run when activeAccount changes
 
-  // Load VANILLA capes when account becomes available and vanilla tab is active
+  // Load VANILLA capes for All + Vanilla
   useEffect(() => {
-    if (activeAccount && filters.showVanillaOnly && vanillaCapes.length === 0 && !isLoadingVanilla && !vanillaError) {
+    if (activeAccount && vanillaCapes.length === 0 && !isLoadingVanilla && !vanillaError) {
       fetchOwnedCapes();
     }
-  }, [activeAccount, filters.showVanillaOnly, vanillaCapes.length, isLoadingVanilla, vanillaError, fetchOwnedCapes]);
+  }, [activeAccount, vanillaCapes.length, isLoadingVanilla, vanillaError, fetchOwnedCapes]);
 
   const hasMoreItems = useMemo(() => {
     // Search results and vanilla capes don't have pagination
@@ -579,13 +583,14 @@ export function CapeBrowser(): JSX.Element {
     setIsEquippingCapeId(capeHash);
 
     let promise;
-    if (filters.showVanillaOnly) {
-      // For vanilla capes, use the vanilla store
-      // Special handling for "no-cape" option - unequip all capes
+    const isVanillaItem =
+      filters.showVanillaOnly ||
+      capeHash === "no-cape" ||
+      vanillaCapes.some((cape) => cape.id === capeHash);
+    if (isVanillaItem) {
       const actualCapeId = capeHash === "no-cape" ? null : capeHash;
       promise = useVanillaCapeStore.getState().equipCape(actualCapeId);
     } else {
-      // For pixelplay capes, use the regular equip function
       promise = equipCape(capeHash);
     }
 
@@ -700,7 +705,7 @@ export function CapeBrowser(): JSX.Element {
   }, [capesData]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-4 relative">
+    <div className={cn("h-full flex flex-col overflow-hidden relative", embedded ? "p-0" : "p-4")}>
       <div className="flex-1 overflow-y-auto no-scrollbar">
         {/* Group Tabs */}
         <div className="mb-4">

@@ -10,7 +10,7 @@ import { ColorPicker } from ".././ColorPicker";
 import { RadiusPicker } from ".././RadiusPicker";
 import type { LauncherConfig } from "../../types/launcherConfig";
 import * as ConfigService from "../../services/launcher-config-service";
-import { useThemeStore } from "../../store/useThemeStore";
+import { ACCENT_COLORS, useThemeStore } from "../../store/useThemeStore";
 import {
   BACKGROUND_EFFECTS,
   useBackgroundEffectStore,
@@ -83,6 +83,7 @@ export function SettingsTab() {
   const isResettingRef = useRef<boolean>(false);
   const {
     accentColor,
+    setAccentColor,
     setCustomAccentColor,
     customColorHistory,
     isBackgroundAnimationEnabled,
@@ -166,6 +167,33 @@ export function SettingsTab() {
       icon: "solar:circle-2-bold",
     },
   ];
+
+  const themePresets: {
+    id: string;
+    name: string;
+    accent: keyof typeof ACCENT_COLORS;
+    effect: string;
+  }[] = [
+    { id: "forest", name: t("settings.themeNames.forest"), accent: "emerald", effect: BACKGROUND_EFFECTS.RETRO_GRID },
+    { id: "end", name: t("settings.themeNames.end"), accent: "ender", effect: BACKGROUND_EFFECTS.NEBULA_PARTICLES },
+    { id: "nether", name: t("settings.themeNames.nether"), accent: "magma", effect: BACKGROUND_EFFECTS.NEBULA_LIGHTNING },
+    { id: "ocean", name: t("settings.themeNames.ocean"), accent: "cyan", effect: BACKGROUND_EFFECTS.NEBULA_WAVES },
+    { id: "ice", name: t("settings.themeNames.ice"), accent: "ice", effect: BACKGROUND_EFFECTS.NEBULA_GRID },
+    { id: "gold", name: t("settings.themeNames.gold"), accent: "gold", effect: BACKGROUND_EFFECTS.NEBULA_LIQUID_CHROME },
+    { id: "void", name: t("settings.themeNames.void"), accent: "indigo", effect: BACKGROUND_EFFECTS.PLAIN_BACKGROUND },
+    { id: "cherry", name: t("settings.themeNames.cherry"), accent: "pink", effect: BACKGROUND_EFFECTS.ENCHANTMENT_PARTICLES },
+    { id: "matrix", name: t("settings.themeNames.matrix"), accent: "lime", effect: BACKGROUND_EFFECTS.MATRIX_RAIN },
+    { id: "copper", name: t("settings.themeNames.copper"), accent: "copper", effect: BACKGROUND_EFFECTS.NEBULA_VOXELS },
+    { id: "amethyst", name: t("settings.themeNames.amethyst"), accent: "amethyst", effect: BACKGROUND_EFFECTS.NEBULA_PARTICLES },
+    { id: "og", name: t("settings.themeNames.og"), accent: "green", effect: BACKGROUND_EFFECTS.OG_BOTH },
+  ];
+
+  const applyThemePreset = (preset: (typeof themePresets)[number]) => {
+    const color = ACCENT_COLORS[preset.accent];
+    if (color) setAccentColor(color);
+    setCurrentEffect(preset.effect);
+    toast.success(t("settings.themeApplied"));
+  };
 
   const qualityOptions: { value: QualityLevel; label: string; icon: string }[] =
     [
@@ -288,204 +316,247 @@ export function SettingsTab() {
     JSON.stringify(config) !== JSON.stringify(tempConfig);
 
   const renderGeneralTab = () => (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Language Selection */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
+      <section className="pp-settings-section">
+        <div className="flex items-center gap-2 mb-1">
           <Icon icon="solar:translation-bold" className="w-6 h-6 text-white" />
           <h3 className="text-3xl font-minecraft text-white">
             {t("settings.language")}
           </h3>
         </div>
-        <p className="text-base text-white/70 font-minecraft-ten mt-2">
-          Select your preferred language for the launcher interface (BETA)
+        <p className="text-base text-white/70 font-minecraft-ten mt-1 mb-3">
+          {t("settings.languageDescription")}
         </p>
-        <div className="mt-4">
-          <LanguageSelector className="w-full md:w-64 h-[42px]" />
-        </div>
-      </div>
+        <LanguageSelector className="w-full md:w-72 h-[42px]" />
+      </section>
 
-      <div>
-        <div className="flex items-center gap-2 mb-2">
+      <section className="pp-settings-section">
+        <div className="flex items-center gap-2 mb-1">
           <Icon icon="solar:palette-bold" className="w-6 h-6 text-white" />
           <h3 className="text-3xl font-minecraft text-white">
             {t("settings.accentColor")}
           </h3>
         </div>
-        <p className="text-base text-white/70 font-minecraft-ten mt-2">
+        <p className="text-base text-white/70 font-minecraft-ten mt-1 mb-4">
           {t("tooltips.customColorPicker")}
         </p>
-      </div>
 
-      <div className="mt-6 flex items-center gap-6">
-        <div className="flex-1">
-          <ColorPicker shape="square" size="md" showCustomOption={false} />
-        </div>
-
-        <button
-          onClick={() => {
-            showModal('color-picker-modal',
-              <ColorPickerModal
-                onClose={() => hideModal('color-picker-modal')}
-              />
-            );
-          }}
-          className="group flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed border-[#ffffff30] hover:border-[#ffffff50] transition-all duration-200 cursor-pointer"
-          title={t("tooltips.customColorPicker")}
-        >
-          <div
-            className="w-8 h-8 rounded-md border-2 border-white/20 shadow-lg group-hover:scale-105 transition-transform"
-            style={{ backgroundColor: accentColor.value }}
-          />
-          <div className="flex flex-col items-start">
-            <span className="font-minecraft-ten text-base text-white/80 group-hover:text-white transition-colors">
-              {t("settings.customColor")}
-            </span>
-            <span className="text-xs text-white/60 font-minecraft-ten">
-              {accentColor.value}
-            </span>
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex-1 min-w-[220px]">
+            <ColorPicker shape="square" size="md" showCustomOption={false} />
           </div>
-          <Icon
-            icon="solar:palette-bold"
-            className="w-5 h-5 text-white/60 group-hover:text-white transition-colors"
-          />
-        </button>
-      </div>
 
+          <button
+            onClick={() => {
+              showModal(
+                "color-picker-modal",
+                <ColorPickerModal
+                  onClose={() => hideModal("color-picker-modal")}
+                />,
+              );
+            }}
+            className="group flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed border-[#ffffff30] hover:border-[#ffffff50] bg-black/40 transition-all duration-200 cursor-pointer"
+            title={t("tooltips.customColorPicker")}
+          >
+            <div
+              className="w-8 h-8 rounded-md border-2 border-white/20 shadow-lg group-hover:scale-105 transition-transform"
+              style={{ backgroundColor: accentColor.value }}
+            />
+            <div className="flex flex-col items-start">
+              <span className="font-minecraft-ten text-base text-white/80 group-hover:text-white transition-colors">
+                {t("settings.customColor")}
+              </span>
+              <span className="text-xs text-white/60 font-minecraft-ten">
+                {accentColor.value}
+              </span>
+            </div>
+            <Icon
+              icon="solar:palette-bold"
+              className="w-5 h-5 text-white/60 group-hover:text-white transition-colors"
+            />
+          </button>
+        </div>
+      </section>
 
-      {/* Settings Grid */}
-      <CompactSettingsGrid
-        settings={[
-          {
-            id: "auto-updates",
-            label: t("settings.autoUpdates"),
-            tooltip: t("tooltips.autoUpdates"),
-            type: "toggle",
-            value: tempConfig?.auto_check_updates || false,
-            onChange: (checked) =>
-              tempConfig &&
-              setTempConfig({ ...tempConfig, auto_check_updates: checked }),
-          },
-          {
-            id: "discord-presence",
-            label: t("settings.discordPresence"),
-            tooltip: t("tooltips.discordPresence"),
-            type: "toggle",
-            value: tempConfig?.enable_discord_presence || false,
-            onChange: (checked) =>
-              tempConfig &&
-              setTempConfig({
-                ...tempConfig,
-                enable_discord_presence: checked,
-              }),
-          },
-          {
-            id: "beta-updates",
-            label: t("settings.betaUpdates"),
-            tooltip: t("tooltips.betaUpdates"),
-            type: "toggle",
-            value: tempConfig?.check_beta_channel || false,
-            onChange: (checked) =>
-              tempConfig &&
-              setTempConfig({ ...tempConfig, check_beta_channel: checked }),
-          },
-          ...(canShowExperimental ? [{
-            id: "experimental-mode",
-            label: t("settings.experimentalMode"),
-            tooltip: t("tooltips.experimentalMode"),
-            type: "toggle" as const,
-            value: tempConfig?.is_experimental || false,
-            onChange: (checked: boolean) => {
-              if (tempConfig) {
+      <section className="pp-settings-section space-y-4">
+        <CompactSettingsGrid
+          settings={[
+            {
+              id: "auto-updates",
+              label: t("settings.autoUpdates"),
+              tooltip: t("tooltips.autoUpdates"),
+              type: "toggle",
+              value: tempConfig?.auto_check_updates || false,
+              onChange: (checked) =>
+                tempConfig &&
+                setTempConfig({ ...tempConfig, auto_check_updates: checked }),
+            },
+            {
+              id: "discord-presence",
+              label: t("settings.discordPresence"),
+              tooltip: t("tooltips.discordPresence"),
+              type: "toggle",
+              value: tempConfig?.enable_discord_presence || false,
+              onChange: (checked) =>
+                tempConfig &&
                 setTempConfig({
                   ...tempConfig,
-                  is_experimental: checked,
-                });
-              }
+                  enable_discord_presence: checked,
+                }),
             },
-          }] : []),
-          {
-            id: "open-logs",
-            label: t("settings.openLogsAfterStarting"),
-            tooltip: t("tooltips.openLogsAfterStarting"),
-            type: "toggle",
-            value: tempConfig?.open_logs_after_starting || false,
-            onChange: (checked) =>
-              tempConfig &&
-              setTempConfig({
-                ...tempConfig,
-                open_logs_after_starting: checked,
-              }),
-          },
-          {
-            id: "hide-window",
-            label: t("settings.hideWindowOnLaunch"),
-            tooltip: t("tooltips.hideWindowOnLaunch"),
-            type: "toggle",
-            value: tempConfig?.hide_on_process_start || false,
-            onChange: (checked) =>
-              tempConfig &&
-              setTempConfig({
-                ...tempConfig,
-                hide_on_process_start: checked,
-              }),
-          },
-        ]}
-        disabled={saving}
-      />
+            {
+              id: "beta-updates",
+              label: t("settings.betaUpdates"),
+              tooltip: t("tooltips.betaUpdates"),
+              type: "toggle",
+              value: tempConfig?.check_beta_channel || false,
+              onChange: (checked) =>
+                tempConfig &&
+                setTempConfig({ ...tempConfig, check_beta_channel: checked }),
+            },
+            ...(canShowExperimental
+              ? [
+                  {
+                    id: "experimental-mode",
+                    label: t("settings.experimentalMode"),
+                    tooltip: t("tooltips.experimentalMode"),
+                    type: "toggle" as const,
+                    value: tempConfig?.is_experimental || false,
+                    onChange: (checked: boolean) => {
+                      if (tempConfig) {
+                        setTempConfig({
+                          ...tempConfig,
+                          is_experimental: checked,
+                        });
+                      }
+                    },
+                  },
+                ]
+              : []),
+            {
+              id: "open-logs",
+              label: t("settings.openLogsAfterStarting"),
+              tooltip: t("tooltips.openLogsAfterStarting"),
+              type: "toggle",
+              value: tempConfig?.open_logs_after_starting || false,
+              onChange: (checked) =>
+                tempConfig &&
+                setTempConfig({
+                  ...tempConfig,
+                  open_logs_after_starting: checked,
+                }),
+            },
+            {
+              id: "hide-window",
+              label: t("settings.hideWindowOnLaunch"),
+              tooltip: t("tooltips.hideWindowOnLaunch"),
+              type: "toggle",
+              value: tempConfig?.hide_on_process_start || false,
+              onChange: (checked) =>
+                tempConfig &&
+                setTempConfig({
+                  ...tempConfig,
+                  hide_on_process_start: checked,
+                }),
+            },
+          ]}
+          disabled={saving}
+        />
 
-      <CompactSettingsGrid
-        settings={[
-          {
-            id: "concurrent-downloads",
-            label: t("settings.concurrentDownloads"),
-            tooltip: t("tooltips.concurrentDownloads"),
-            type: "range",
-            value: tempConfig?.concurrent_downloads || 3,
-            onChange: handleConcurrentDownloadsChange,
-            min: 1,
-            max: 10,
-            step: 1,
-            icon: "solar:multiple-forward-right-bold",
-            minLabel: "1",
-            maxLabel: "10",
-          },
-          {
-            id: "concurrent-io",
-            label: t("settings.concurrentIO"),
-            tooltip: t("tooltips.concurrentIO"),
-            type: "range",
-            value: tempConfig?.concurrent_io_limit || 10,
-            onChange: handleConcurrentIoLimitChange,
-            min: 1,
-            max: 20,
-            step: 1,
-            icon: "solar:server-bold",
-            minLabel: "1",
-            maxLabel: "20",
-          },
-          {
-            id: "border-radius",
-            label: t("settings.borderRadius"),
-            tooltip: t("tooltips.borderRadius"),
-            type: "range",
-            value: borderRadius,
-            onChange: setBorderRadius,
-            min: 0,
-            max: 20,
-            step: 1,
-            icon: "solar:widget-bold",
-            minLabel: "0px",
-            maxLabel: "20px",
-          },
-        ]}
-        disabled={saving}
-      />
+        <CompactSettingsGrid
+          settings={[
+            {
+              id: "concurrent-downloads",
+              label: t("settings.concurrentDownloads"),
+              tooltip: t("tooltips.concurrentDownloads"),
+              type: "range",
+              value: tempConfig?.concurrent_downloads || 3,
+              onChange: handleConcurrentDownloadsChange,
+              min: 1,
+              max: 10,
+              step: 1,
+              icon: "solar:multiple-forward-right-bold",
+              minLabel: "1",
+              maxLabel: "10",
+            },
+            {
+              id: "concurrent-io",
+              label: t("settings.concurrentIO"),
+              tooltip: t("tooltips.concurrentIO"),
+              type: "range",
+              value: tempConfig?.concurrent_io_limit || 10,
+              onChange: handleConcurrentIoLimitChange,
+              min: 1,
+              max: 20,
+              step: 1,
+              icon: "solar:server-bold",
+              minLabel: "1",
+              maxLabel: "20",
+            },
+            {
+              id: "border-radius",
+              label: t("settings.borderRadius"),
+              tooltip: t("tooltips.borderRadius"),
+              type: "range",
+              value: borderRadius,
+              onChange: setBorderRadius,
+              min: 0,
+              max: 20,
+              step: 1,
+              icon: "solar:widget-bold",
+              minLabel: "0px",
+              maxLabel: "20px",
+            },
+          ]}
+          disabled={saving}
+        />
+      </section>
     </div>
   );
 
   const renderAppearanceTab = () => (
     <div className="space-y-6">
+      <section className="pp-settings-section">
+        <div className="flex items-center gap-2 mb-1">
+          <Icon icon="solar:palette-bold" className="w-6 h-6 text-white" />
+          <h3 className="text-3xl font-minecraft text-white">
+            {t("settings.themes")}
+          </h3>
+        </div>
+        <p className="text-base text-white/70 font-minecraft-ten mt-1 mb-4">
+          {t("settings.themesDescription")}
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {themePresets.map((preset) => {
+            const color = ACCENT_COLORS[preset.accent];
+            const active =
+              accentColor.value === color?.value && currentEffect === preset.effect;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => applyThemePreset(preset)}
+                className="text-left px-3 py-3 border-2 transition-all"
+                style={{
+                  backgroundColor: active ? `${color.value}40` : "rgba(0,0,0,0.55)",
+                  borderColor: active ? `${color.value}` : "rgba(255,255,255,0.12)",
+                  boxShadow: active ? `0 0 0 1px ${color.value}` : "none",
+                }}
+              >
+                <span
+                  className="block w-full h-2 mb-2"
+                  style={{ backgroundColor: color?.value }}
+                />
+                <span className="font-minecraft text-xl text-white lowercase leading-none">
+                  {preset.name}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <div>
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
@@ -556,21 +627,21 @@ export function SettingsTab() {
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Icon icon="solar:folder-bold" className="w-6 h-6 text-white" />
-            <SimpleTooltip content="This setting allows you to store game data on a different drive or location. Useful if your main drive is running out of space. The launcher will automatically handle the location change for new downloads and installations.">
+            <SimpleTooltip content={t("tooltips.gameDataDirectory")}>
               <h3 className="text-3xl font-minecraft text-white lowercase cursor-help">
-                Game Data Directory
+                {t("settings.gameDataDirectory")}
               </h3>
             </SimpleTooltip>
           </div>
           <p className="text-base text-white/70 font-minecraft-ten mt-2">
-            Choose a custom location to store game data (worlds, mods, libraries, etc.)
+            {t("settings.gameDataDirectoryDescription")}
           </p>
 
           <div className="flex gap-3 mt-4">
             <input
               type="text"
               value={tempConfig?.custom_game_directory || ""}
-              placeholder="Default location will be used"
+              placeholder={t("placeholders.defaultLocation")}
               className="flex-1 p-3 rounded-md bg-black/40 border border-[#ffffff20] text-white placeholder-white/40 font-minecraft-ten focus:outline-none focus:ring-2 focus:ring-white/30"
               disabled={saving}
               readOnly
@@ -588,7 +659,7 @@ export function SettingsTab() {
                     });
                   }
                 }}
-                title="Reset to default location"
+                title={t("settings.resetToDefault")}
               >
                 <Icon icon="solar:close-circle-bold" className="w-5 h-5 text-red-400" />
               </Button>
@@ -615,7 +686,7 @@ export function SettingsTab() {
                   console.error('Fehler beim Ordner-Dialog:', error);
                 }
               }}
-              title="Select custom directory"
+              title={t("settings.selectCustomDirectory")}
             >
               <Icon icon="solar:folder-open-bold" className="w-5 h-5" />
             </Button>
@@ -629,7 +700,7 @@ export function SettingsTab() {
             <div className="flex items-center gap-2">
               <Icon icon="solar:code-bold" className="w-6 h-6 text-white" />
               <h3 className="text-3xl font-minecraft text-white lowercase">
-                Game Hooks
+                {t("settings.gameHooks")}
               </h3>
             </div>
             <Button
@@ -643,11 +714,11 @@ export function SettingsTab() {
                 />
               }
             >
-              {isHooksExpanded ? "Hide configuration" : "Show configuration"}
+              {isHooksExpanded ? t("settings.hideConfiguration") : t("settings.showConfiguration")}
             </Button>
           </div>
           <p className="text-base text-white/70 font-minecraft-ten mt-2">
-            Configure custom commands to run before, during, and after game launch
+            {t("settings.gameHooksDescription")}
           </p>
         </div>
 
@@ -657,7 +728,7 @@ export function SettingsTab() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Icon icon="solar:play-circle-bold" className="w-5 h-5 text-white" />
-                  <h5 className="font-minecraft text-2xl lowercase text-white">Pre-Launch Hook</h5>
+                  <h5 className="font-minecraft text-2xl lowercase text-white">{t("settings.preLaunchHook")}</h5>
                 </div>
                 <Button
                   variant={isPreLaunchEditEnabled ? "secondary" : "ghost"}
@@ -668,17 +739,16 @@ export function SettingsTab() {
                       return;
                     }
                     const confirmed = await confirm({
-                      title: "enable pre-launch editing",
-                      message:
-                        "Editing the Pre-Launch hook can prevent the game from starting if misconfigured. Proceed only if you know what you're doing.",
-                      confirmText: "ENABLE",
-                      cancelText: "CANCEL",
+                      title: t("warnings.enablePreLaunchEditing"),
+                      message: t("warnings.preLaunchWarning"),
+                      confirmText: t("common.enable").toUpperCase(),
+                      cancelText: t("common.cancel").toUpperCase(),
                       type: "warning",
                       fullscreen: true,
                     });
                     if (confirmed) {
                       setIsPreLaunchEditEnabled(true);
-                      toast.success("Pre-Launch editing enabled");
+                      toast.success(t("settings.preLaunchEditingEnabled"));
                     }
                   }}
                   icon={
@@ -688,11 +758,11 @@ export function SettingsTab() {
                     />
                   }
                 >
-                  {isPreLaunchEditEnabled ? "Disable editing" : "Enable editing"}
+                  {isPreLaunchEditEnabled ? t("settings.disableEditing") : t("settings.enableEditing")}
                 </Button>
               </div>
               <p className="text-sm text-white/60 font-minecraft-ten mb-4">
-                Command to run before Minecraft starts. If this command fails, the launch will be aborted.
+                {t("tooltips.preLaunchCommand")}
               </p>
               <input
                 type="text"
@@ -708,10 +778,10 @@ export function SettingsTab() {
                     });
                   }
                 }}
-                placeholder='Example: echo "Starting Minecraft..."'
+                placeholder={t("placeholders.preLaunchExample")}
                 className="w-full p-3 rounded-md bg-black/40 border border-[#ffffff20] text-white placeholder-white/40 font-minecraft-ten focus:outline-none focus:ring-2 focus:ring-white/30"
                 disabled={saving || !isPreLaunchEditEnabled}
-                title={!isPreLaunchEditEnabled ? "Enable editing to modify this field" : undefined}
+                title={!isPreLaunchEditEnabled ? t("settings.enableEditingToModify") : undefined}
               />
             </div>
 
@@ -719,7 +789,7 @@ export function SettingsTab() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Icon icon="solar:shield-bold" className="w-5 h-5 text-white" />
-                  <h5 className="font-minecraft text-2xl lowercase text-white">Wrapper Hook</h5>
+                  <h5 className="font-minecraft text-2xl lowercase text-white">{t("settings.wrapperHook")}</h5>
                 </div>
                 <Button
                   variant={isWrapperEditEnabled ? "secondary" : "ghost"}
@@ -730,17 +800,16 @@ export function SettingsTab() {
                       return;
                     }
                     const confirmed = await confirm({
-                      title: "enable wrapper editing",
-                      message:
-                        "Changing the Wrapper hook affects how Java is executed. Misconfiguration may prevent launching.",
-                      confirmText: "ENABLE",
-                      cancelText: "CANCEL",
+                      title: t("warnings.enableWrapperEditing"),
+                      message: t("warnings.wrapperWarning"),
+                      confirmText: t("common.enable").toUpperCase(),
+                      cancelText: t("common.cancel").toUpperCase(),
                       type: "warning",
                       fullscreen: true,
                     });
                     if (confirmed) {
                       setIsWrapperEditEnabled(true);
-                      toast.success("Wrapper editing enabled");
+                      toast.success(t("settings.wrapperEditingEnabled"));
                     }
                   }}
                   icon={
@@ -750,11 +819,11 @@ export function SettingsTab() {
                     />
                   }
                 >
-                  {isWrapperEditEnabled ? "Disable editing" : "Enable editing"}
+                  {isWrapperEditEnabled ? t("settings.disableEditing") : t("settings.enableEditing")}
                 </Button>
               </div>
               <p className="text-sm text-white/60 font-minecraft-ten mb-4">
-                Wrapper command to run Java through (e.g., sandboxing tools). The Java path will be passed as an argument.
+                {t("tooltips.wrapperCommand")}
               </p>
               <input
                 type="text"
@@ -770,10 +839,10 @@ export function SettingsTab() {
                     });
                   }
                 }}
-                placeholder="Example: firejail or gamemoderun"
+                placeholder={t("placeholders.wrapperExample")}
                 className="w-full p-3 rounded-md bg-black/40 border border-[#ffffff20] text-white placeholder-white/40 font-minecraft-ten focus:outline-none focus:ring-2 focus:ring-white/30"
                 disabled={saving || !isWrapperEditEnabled}
-                title={!isWrapperEditEnabled ? "Enable editing to modify this field" : undefined}
+                title={!isWrapperEditEnabled ? t("settings.enableEditingToModify") : undefined}
               />
             </div>
 
@@ -781,7 +850,7 @@ export function SettingsTab() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Icon icon="solar:stop-circle-bold" className="w-5 h-5 text-white" />
-                  <h5 className="font-minecraft text-2xl lowercase text-white">Post-Exit Hook</h5>
+                  <h5 className="font-minecraft text-2xl lowercase text-white">{t("settings.postExitHook")}</h5>
                 </div>
                 <Button
                   variant={isPostExitEditEnabled ? "secondary" : "ghost"}
@@ -792,17 +861,16 @@ export function SettingsTab() {
                       return;
                     }
                     const confirmed = await confirm({
-                      title: "enable post-exit editing",
-                      message:
-                        "Post-Exit hook runs system commands after the game closes. Proceed only if you trust the command.",
-                      confirmText: "ENABLE",
-                      cancelText: "CANCEL",
+                      title: t("warnings.enablePostExitEditing"),
+                      message: t("warnings.postExitWarning"),
+                      confirmText: t("common.enable").toUpperCase(),
+                      cancelText: t("common.cancel").toUpperCase(),
                       type: "warning",
                       fullscreen: true,
                     });
                     if (confirmed) {
                       setIsPostExitEditEnabled(true);
-                      toast.success("Post-Exit editing enabled");
+                      toast.success(t("settings.postExitEditingEnabled"));
                     }
                   }}
                   icon={
@@ -812,11 +880,11 @@ export function SettingsTab() {
                     />
                   }
                 >
-                  {isPostExitEditEnabled ? "Disable editing" : "Enable editing"}
+                  {isPostExitEditEnabled ? t("settings.disableEditing") : t("settings.enableEditing")}
                 </Button>
               </div>
               <p className="text-sm text-white/60 font-minecraft-ten mb-4">
-                Command to run after Minecraft exits successfully. Runs in the background without blocking.
+                {t("tooltips.postExitCommand")}
               </p>
               <input
                 type="text"
@@ -832,10 +900,10 @@ export function SettingsTab() {
                     });
                   }
                 }}
-                placeholder='Example: echo "Minecraft closed"'
+                placeholder={t("placeholders.postExitExample")}
                 className="w-full p-3 rounded-md bg-black/40 border border-[#ffffff20] text-white placeholder-white/40 font-minecraft-ten focus:outline-none focus:ring-2 focus:ring-white/30"
                 disabled={saving || !isPostExitEditEnabled}
-                title={!isPostExitEditEnabled ? "Enable editing to modify this field" : undefined}
+                title={!isPostExitEditEnabled ? t("settings.enableEditingToModify") : undefined}
               />
             </div>
 
@@ -844,11 +912,10 @@ export function SettingsTab() {
                 <Icon icon="solar:danger-triangle-bold" className="w-6 h-6 text-orange-400 flex-shrink-0 mt-1" />
                 <div>
                   <h4 className="text-xl font-minecraft text-orange-300 mb-2 lowercase">
-                    Warning
+                    {t("settings.warning")}
                   </h4>
                   <p className="text-sm text-orange-200/80 font-minecraft-ten">
-                    These hooks execute system commands with full permissions. Only use commands you trust and understand.
-                    Invalid commands may prevent Minecraft from launching or cause security issues.
+                    {t("warnings.hooksWarning")}
                   </p>
                 </div>
               </div>
@@ -859,12 +926,12 @@ export function SettingsTab() {
                 <Icon icon="solar:info-circle-bold" className="w-6 h-6 text-emerald-400 flex-shrink-0 mt-1" />
                 <div>
                   <h4 className="text-xl font-minecraft text-emerald-300 mb-2 lowercase">
-                    Examples
+                    {t("settings.examples")}
                   </h4>
                   <div className="space-y-2 text-sm text-emerald-200/80 font-minecraft-ten">
-                    <p><strong>Pre-Launch:</strong> <code>echo "Starting game..."</code></p>
-                    <p><strong>Wrapper:</strong> <code>firejail</code> or <code>gamemoderun</code></p>
-                    <p><strong>Post-Exit:</strong> <code>notify-send "Game finished"</code></p>
+                    <p>{t("examples.preLaunch")}</p>
+                    <p>{t("examples.wrapper")}</p>
+                    <p>{t("examples.postExit")}</p>
                   </div>
                 </div>
               </div>
@@ -879,7 +946,7 @@ export function SettingsTab() {
             <div className="flex items-center gap-2">
               <Icon icon="solar:document-text-bold" className="w-6 h-6 text-white" />
               <h3 className="text-3xl font-minecraft text-white lowercase">
-                Third-party Licenses
+                {t("settings.thirdPartyLicenses")}
               </h3>
             </div>
             <Button
@@ -890,11 +957,11 @@ export function SettingsTab() {
               }}
               icon={<Icon icon="solar:external-link-bold" className="w-5 h-5" />}
             >
-              View Licenses
+              {t("settings.viewLicenses")}
             </Button>
           </div>
           <p className="text-base text-white/70 font-minecraft-ten mt-2">
-            View licenses for code and components from third parties
+            {t("settings.licensesDescription")}
           </p>
         </div>
       </div>
@@ -912,7 +979,7 @@ export function SettingsTab() {
               className="w-10 h-10 text-white/70 animate-spin mx-auto mb-4"
             />
             <p className="text-2xl text-white/70 font-minecraft">
-              Loading Settings...
+              {t("common.loading")}
             </p>
           </div>
         </div>
@@ -929,7 +996,7 @@ export function SettingsTab() {
             />
             <div>
               <h3 className="text-2xl text-red-300 font-minecraft mb-2">
-                Error Loading Settings
+                {t("settings.errorLoadingSettings")}
               </h3>
               <p className="text-xl text-red-200/80 font-minecraft mb-4">
                 {error}
@@ -940,7 +1007,7 @@ export function SettingsTab() {
                 size="sm"
                 icon={<Icon icon="solar:refresh-bold" className="w-5 h-5" />}
               >
-                Try Again
+                {t("settings.tryAgain")}
               </Button>
             </div>
           </div>
@@ -952,7 +1019,7 @@ export function SettingsTab() {
       return (
         <div className="text-center p-8">
           <p className="text-2xl text-white/70 font-minecraft">
-            Could not load configuration.
+            {t("settings.couldNotLoadConfiguration")}
           </p>
         </div>
       );
@@ -987,17 +1054,17 @@ export function SettingsTab() {
         <div style={{ transform: 'translateY(-3px)' }}>
           <ActionButton
             id="open-directory"
-            label="OPEN DIRECTORY"
+            label={t("settings.openDirectory")}
             icon="solar:folder-bold"
             variant="highlight"
-            tooltip="Open Launcher Directory"
+            tooltip={t("tooltips.openLauncherDirectory")}
             size="sm"
             onClick={async () => {
               try {
                 await openLauncherDirectory();
               } catch (err) {
                 console.error("Failed to open launcher directory:", err);
-                toast.error("Failed to open launcher directory: " + err);
+                toast.error(t("errors.failedToOpenDirectory", { error: String(err) }));
               }
             }}
           />

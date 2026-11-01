@@ -6,6 +6,13 @@ export interface MinecraftAccount {
     access_token: string;
     refresh_token?: string;
     expires_at?: string;
+    offline?: boolean;
+    kind?: string;
+    rank?: string;
+    rank_label?: string;
+    rank_color?: string;
+    pixel_account?: boolean;
+    unread_count?: number;
 }
 
 /**

@@ -26,9 +26,9 @@ export function DropdownItem({
       className={cn(
         "w-full px-4 py-2 text-left font-minecraft text-lg transition-all duration-200 lowercase",
         "flex items-center gap-3",
-        "hover:bg-white/10",
-        "active:bg-white/5",
-        isActive && "bg-white/15",
+        "hover:bg-white/15",
+        "active:bg-white/10",
+        isActive && "bg-white/20",
         className,
       )}
       onClick={onClick}

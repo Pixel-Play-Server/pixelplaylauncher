@@ -91,22 +91,22 @@ export function GlobalToaster() {
     switch (variant) {
       case "success":
         return {
-          backgroundColor: "rgba(16, 185, 129, 0.3)",
-          borderColor: "rgba(16, 185, 129, 0.8)",
+          backgroundColor: "rgba(6, 18, 14, 0.96)",
+          borderColor: "rgba(16, 185, 129, 0.9)",
           borderBottomColor: "#059669",
           color: "#d1fae5",
         };
       case "error":
         return {
-          backgroundColor: "rgba(239, 68, 68, 0.3)",
-          borderColor: "rgba(239, 68, 68, 0.8)",
+          backgroundColor: "rgba(22, 8, 8, 0.96)",
+          borderColor: "rgba(239, 68, 68, 0.9)",
           borderBottomColor: "#dc2626",
           color: "#fee2e2",
         };
       default:
         return {
-          backgroundColor: `${accentColor.value}30`,
-          borderColor: `${accentColor.value}80`,
+          backgroundColor: "rgba(10, 12, 14, 0.96)",
+          borderColor: `${accentColor.value}cc`,
           borderBottomColor: accentColor.value,
           color: "#ffffff",
         };
@@ -117,17 +117,15 @@ export function GlobalToaster() {
     <div ref={toasterRef}>      <HotToaster
         position="bottom-right"
         toastOptions={{
-          className: `font-minecraft tracking-wider lowercase text-shadow-sm ${borderRadiusClass}`,
+          className: `font-minecraft-ten tracking-wide normal-case text-shadow-sm ${borderRadiusClass}`,
           style: {
-            borderWidth: "1px",
-            borderBottomWidth: "2px",
+            borderWidth: "2px",
+            borderBottomWidth: "3px",
             borderStyle: "solid",
-            boxShadow: "none",
-            padding: "12px 20px",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-            backgroundColor: `${accentColor.value}30`,
-            borderColor: `${accentColor.value}80`,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.55)",
+            padding: "14px 20px",
+            backgroundColor: "rgba(10, 12, 14, 0.96)",
+            borderColor: `${accentColor.value}cc`,
             borderBottomColor: accentColor.value,
             color: "#ffffff",
             minWidth: "300px",
