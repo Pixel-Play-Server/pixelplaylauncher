@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { toast } from "react-hot-toast";
 import { invoke } from "@tauri-apps/api/core";
+import { HorizonRegistry } from "./HorizonRegistry";
 import type { Profile } from "../../types/profile";
 import { ProfileIconV2 } from "./ProfileIconV2";
 import { useThemeStore } from "../../store/useThemeStore";
@@ -583,6 +584,7 @@ export function ProfileDetailViewV2({
               }}>Instalar mod .hmod</Button>
             </div>
           )}
+          {currentProfile.loader === "horizon" && <HorizonRegistry profileId={currentProfile.id} />}
           {/* Divider under profile info */}
           <div className="h-px w-full bg-white/10 mt-4 mb-4" />
 
