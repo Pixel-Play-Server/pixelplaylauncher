@@ -204,7 +204,11 @@ export function ModrinthSearchV2({
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
 
   // Get mod source from theme store (persistent)
-  const { modSource, setModSource } = useThemeStore();
+  const { modSource: preferredSource, setModSource } = useThemeStore();
+  const effectiveProfile = selectedProfile ?? initialProfiles.find(p => p.id === selectedProfileId);
+  const horizonContent = effectiveProfile?.loader === "horizon" && (projectType === "mod" || projectType === "shader" || projectType === "resourcepack");
+  const modSource = horizonContent ? ModPlatform.Horizon : preferredSource;
+
 
   // New state for tracking which projects are installed in the selected profile
   const [installedProjects, setInstalledProjects] = useState<Record<string, ContentInstallStatus | null>>({}); // Updated type
@@ -308,7 +312,9 @@ export function ModrinthSearchV2({
     });
   }, [allCategoriesData, projectType]);
 
+  const searchGeneration = useRef(0);
   const performSearch = useCallback(async (newSearch = false) => {
+    const generation = ++searchGeneration.current;
     console.log('[ModrinthSearchV2] performSearch ENTRY:', {
       newSearch,
       projectType,
@@ -341,8 +347,8 @@ export function ModrinthSearchV2({
         query: searchTerm,
         source: modSource,
         project_type: convertToUnifiedProjectType(projectType),
-        game_version: selectedGameVersions.length > 0 ? selectedGameVersions[0] : undefined,
-        mod_loaders: currentSelectedLoaders.length > 0 ? currentSelectedLoaders : undefined,
+        game_version: horizonContent ? effectiveProfile?.game_version : (selectedGameVersions.length > 0 ? selectedGameVersions[0] : undefined),
+        mod_loaders: horizonContent ? ["horizon"] : (currentSelectedLoaders.length > 0 ? currentSelectedLoaders : undefined),
         limit,
         offset: newSearch ? 0 : offset,
         sort: sortOrder as UnifiedSortType,
@@ -350,6 +356,7 @@ export function ModrinthSearchV2({
         client_side_filter: filterClientRequired ? "required" : undefined,
         server_side_filter: filterServerRequired ? "required" : undefined
       });
+      if (generation !== searchGeneration.current) return;
       setSearchResults(prevResults => newSearch ? response.results : [...prevResults, ...response.results]);
       setTotalHits(response.pagination.total_count);
       if (!newSearch) {
@@ -358,6 +365,7 @@ export function ModrinthSearchV2({
         setOffset(response.results.length);
       }
     } catch (err) {
+      if (generation !== searchGeneration.current) return;
       console.error("Failed to search Modrinth projects:", err);
       setError(`${err.message}`);
       if (newSearch) {
@@ -366,6 +374,7 @@ export function ModrinthSearchV2({
         setOffset(0);
       }
     } finally {
+      if (generation !== searchGeneration.current) return;
       setLoading(false);
       
       // Set up delayed "No results found" message only for new searches
@@ -376,7 +385,7 @@ export function ModrinthSearchV2({
       }
     }
   }, [
-    searchTerm, projectType, offset, limit, sortOrder, modSource,
+    searchTerm, projectType, offset, limit, sortOrder, modSource, horizonContent, effectiveProfile?.id, effectiveProfile?.game_version, effectiveProfile?.loader,
     currentSelectedCategories, selectedGameVersions, currentSelectedLoaders,
     filterClientRequired, filterServerRequired,
     allCategoriesData, allLoadersData, gameVersionsData
@@ -404,7 +413,7 @@ export function ModrinthSearchV2({
 
     performSearch(true);
   }, [
-    searchTerm, projectType, sortOrder, modSource,
+    searchTerm, projectType, sortOrder, modSource, horizonContent, effectiveProfile?.id,
     currentSelectedCategories, selectedGameVersions, currentSelectedLoaders,
     filterClientRequired, filterServerRequired
   ]);
@@ -2743,7 +2752,12 @@ export function ModrinthSearchV2({
       sha1_hash: primaryFile.hashes?.sha1 || undefined,
     };
 
-    if (!payload.sha1_hash) {
+    if (project.source === ModPlatform.Horizon) {
+      const status = await ProfileService.isContentInstalled({ profile_id: profileId, project_id: project.project_id, project_type: projectType, file_name: primaryFile.filename });
+      payload.file_path = status.found_item_details?.item_id;
+      payload.content_type = projectType === "resourcepack" ? NrContentType.ResourcePack : NrContentType.Mod;
+    }
+    if (!payload.sha1_hash && !payload.file_path) {
       toast.error("SHA1 hash is missing for this version. Cannot proceed with deletion.");
       console.error("Deletion failed: SHA1 hash missing for", project.title, version.version_number, primaryFile);
       return;
@@ -2961,9 +2975,13 @@ export function ModrinthSearchV2({
       return; // Exit after handling pixelplay pack item
     }
 
-    // Regular content toggle using SHA1 hash (for non-pixelplay pack items)
-    if (!sha1Hash) {
-      toast.error("Cannot enable/disable version: missing file hash");
+    let localPath: string | undefined;
+    if (project.source === ModPlatform.Horizon) {
+      const status = await ProfileService.isContentInstalled({ profile_id: profileId, project_id: project.project_id, project_type: projectType, file_name: (version.files.find(f => f.primary) ?? version.files[0])?.filename });
+      localPath = status.found_item_details?.item_id;
+    }
+    if (!sha1Hash && !localPath) {
+      toast.error("Installed file not found");
       return;
     }
 
@@ -2974,7 +2992,8 @@ export function ModrinthSearchV2({
       async () => {
         const payload: ToggleContentPayload = {
           profile_id: profileId,
-          sha1_hash: sha1Hash,
+          sha1_hash: sha1Hash || undefined,
+          file_path: localPath,
           enabled: newEnabledState,
           content_type: nrContentType, // Add mapped content_type
           pixelplay_mod_identifier: undefined, // Explicitly undefined for non-pixelplay items
@@ -3070,10 +3089,10 @@ export function ModrinthSearchV2({
               setSelectedProfile(profile);
             }
           }}
-          sortOrder={sortOrder}
+          sortOrder={horizonContent ? UnifiedSortType.Name : sortOrder}
           onSortOrderChange={setSortOrder}
-          sortOptions={sortOptions}
-          isSidebarVisible={isSidebarVisible}
+          sortOptions={horizonContent ? [{ value: UnifiedSortType.Name, label: "Name" }] : sortOptions}
+          isSidebarVisible={horizonContent ? false : isSidebarVisible}
           onToggleSidebar={() => setIsSidebarVisible(!isSidebarVisible)}
           selectedGameVersions={selectedGameVersions}
           currentSelectedLoaders={currentSelectedLoaders}
@@ -3098,7 +3117,7 @@ export function ModrinthSearchV2({
             <p className="p-4 text-red-500 text-center">Error: {error}</p>
           )}
           {searchResults.length === 0 && !loading && !error && showNoResultsMessage && (
-            <p className="p-4 text-center text-xl lowercase text-gray-400">No results found. Try adjusting filters or search term.</p>
+            <p className="p-4 text-center text-xl normal-case text-gray-400">No results found. Try adjusting filters or search term.</p>
           )}
 
           {searchResults.length > 0 && (
@@ -3160,7 +3179,7 @@ export function ModrinthSearchV2({
                   <div className="flex justify-center p-4">
                     <button
                       onClick={loadMoreResults}
-                      className="px-4 py-2 bg-black/30 hover:bg-black/40 text-white/70 hover:text-white border border-white/10 hover:border-white/20 rounded-lg font-minecraft text-2xl lowercase transition-all duration-200"
+                      className="px-4 py-2 bg-black/30 hover:bg-black/40 text-white/70 hover:text-white border border-white/10 hover:border-white/20 rounded-lg font-minecraft text-2xl normal-case transition-all duration-200"
                     >
                       Load More ({totalHits - searchResults.length} remaining)
                     </button>
@@ -3247,7 +3266,7 @@ export function ModrinthSearchV2({
                     }
                     if (!loading && searchResults.length > 0 && searchResults.length >= totalHits) {
                        return (
-                        <div className="p-4 text-center text-xl lowercase text-gray-400">
+                        <div className="p-4 text-center text-xl normal-case text-gray-400">
                           No more results.
                         </div>
                       );
@@ -3263,7 +3282,7 @@ export function ModrinthSearchV2({
       </div>
 
       {/* Filters Sidebar (Right, full height, scrollable) - Now with conditional rendering */} 
-      {isSidebarVisible && (
+      {isSidebarVisible && !horizonContent && (
         <ModrinthFilterSidebarV2
           projectType={projectType}
           accentColor={accentColor}

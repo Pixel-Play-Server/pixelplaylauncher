@@ -11,7 +11,6 @@ import { setVisibleInterval } from "../../lib/visible-interval";
 import { Button } from "../ui/buttons/Button";
 import { Input } from "../ui/Input";
 import { PlayerHeadshot } from "../account/PlayerHeadshot";
-import { RankTag } from "../account/RankTag";
 import {
   acceptFriend,
   addFriend,
@@ -41,7 +40,21 @@ export function FriendsTab() {
   const [me, setMe] = useState<PixelFriend | undefined>();
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [section, setSection] = useState<"friends" | "requests">("friends");
+  const [filter, setFilter] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const refreshGeneration = useRef(0);
+  const sessionID = activeAccount?.id;
+  const sessionIsCurrent = () => useMinecraftAuthStore.getState().activeAccount?.id === sessionID;
+  useEffect(() => {
+    setFriends([]); setIncoming([]); setOutgoing([]); setMe(undefined);
+    setActiveChatFriend(null); setChatInput(""); setListError(null);
+    return () => { refreshGeneration.current++; };
+  }, [sessionID]);
 
+  const chatOwner = useRef<string | undefined>();
   const [activeChatFriend, setActiveChatFriend] = useState<PixelFriend | null>(null);
   const [chatInput, setChatInput] = useState("");
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -73,16 +86,22 @@ export function FriendsTab() {
   }, [activeChatFriend, setActiveChatUsername]);
 
   useEffect(() => {
-    if (!activeChatFriend) return;
+    if (!isPixel || !activeChatFriend || chatOwner.current !== sessionID) return;
     const name = activeChatFriend.username;
+    let disposed = false;
     setHistoryLoading(true);
+    setHistoryError(null);
     void socialHistory(name)
-      .then((history) => useSocialCallStore.getState().setHistory(name, history))
-      .catch((err) => toast.error(err instanceof Error ? err.message : String(err)))
-      .finally(() => setHistoryLoading(false));
-    useSocialCallStore.getState().clearUnread(name);
-    void socialMarkRead(name).catch(() => undefined);
-  }, [activeChatFriend, connected]);
+      .then((history) => { if (!disposed && sessionIsCurrent()) useSocialCallStore.getState().setHistory(name, history); })
+      .catch((err) => { if (!disposed && sessionIsCurrent()) setHistoryError(String(err instanceof Error ? err.message : err)); })
+      .finally(() => { if (!disposed && sessionIsCurrent()) setHistoryLoading(false); });
+    if (!document.hidden && document.hasFocus()) {
+      void socialMarkRead(name).then(() => {
+        if (!disposed && sessionIsCurrent()) useSocialCallStore.getState().clearUnread(name);
+      }).catch(() => undefined);
+    }
+    return () => { disposed = true; };
+  }, [activeChatFriend?.username, connected, sessionID]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ block: "end" });
@@ -96,32 +115,22 @@ export function FriendsTab() {
       setMe(undefined);
       return;
     }
+    const generation = ++refreshGeneration.current;
     setLoading(true);
     try {
       const out = await listFriends();
+      if (generation !== refreshGeneration.current || !sessionIsCurrent()) return;
+      setListError(null);
       setFriends(out.friends);
       setIncoming(out.incoming);
       setOutgoing(out.outgoing);
       setMe(out.me);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      const lower = msg.toLowerCase();
-      if (
-        lower.includes("token") ||
-        lower.includes("vencido") ||
-        lower.includes("expirado") ||
-        lower.includes("firma") ||
-        lower.includes("invalid") ||
-        lower.includes("unauthorized")
-      ) {
-        console.warn("[FriendsTab] Token o autenticación en servidor Pixel:", msg);
-      } else {
-        toast.error(msg);
-      }
+      if (generation === refreshGeneration.current && sessionIsCurrent()) setListError(err instanceof Error ? err.message : String(err));
     } finally {
-      setLoading(false);
+      if (generation === refreshGeneration.current && sessionIsCurrent()) setLoading(false);
     }
-  }, [isPixel]);
+  }, [isPixel, sessionID]);
 
   useEffect(() => {
     void refresh();
@@ -143,6 +152,7 @@ export function FriendsTab() {
   };
 
   const handleAdd = async () => {
+    if (busy) return;
     const name = query.trim();
     if (!name) {
       toast.error(t("friends.nameRequired"));
@@ -169,22 +179,22 @@ export function FriendsTab() {
     const store = useSocialCallStore.getState();
     const cid = retryCid ?? `c${Date.now()}${Math.random().toString(36).slice(2, 7)}`;
     if (retryCid) {
-      store.setHistory(friendName, (store.chats[chatKey(friendName)] ?? []).filter((m) => m.cid !== retryCid && !m.pending && !m.failed));
-    }
-    store.addMessage(
+      store.retryMessage(friendName, retryCid);
+    } else store.addMessage(
       { id: cid, cid, from: myName || activeAccount?.username || "", to: friendName, text, ts: Date.now(), pending: true },
       friendName,
     );
     try {
       await socialSend(friendName, text, cid);
     } catch (err) {
+      if (!sessionIsCurrent()) return;
       store.resolvePending(cid, null, friendName);
       toast.error(err instanceof Error ? err.message : "No se pudo enviar el mensaje");
     }
   };
 
   const handleSendMessage = () => {
-    if (!activeChatFriend || !chatInput.trim()) return;
+    if (!connected || !activeChatFriend || !chatInput.trim()) return;
     const text = chatInput.trim();
     setChatInput("");
     void sendText(activeChatFriend.username, text);
@@ -203,7 +213,7 @@ export function FriendsTab() {
       <div className="h-full flex items-center justify-center p-8">
         <div className="max-w-md text-center space-y-3">
           <Icon icon="solar:users-group-rounded-bold" className="w-16 h-16 mx-auto text-white/40" />
-          <h2 className="font-minecraft text-4xl text-white lowercase">
+          <h2 className="font-minecraft text-4xl text-white normal-case">
             {t("friends.title")}
           </h2>
           <p className="text-white/70 font-minecraft-ten text-sm">
@@ -215,21 +225,21 @@ export function FriendsTab() {
   }
 
   return (
-    <div className="h-full flex flex-col p-6 overflow-hidden">
-      <div className="flex-1 flex gap-6 min-h-0">
-        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-5 pr-2">
-          <div className="space-y-3">
-            <div>
-              <h2 className="font-minecraft text-4xl text-white lowercase">
-                {t("friends.title")}
-              </h2>
-              <p className="text-white/60 font-minecraft-ten text-sm mt-1">
-                {t("friends.subtitle")}
-              </p>
-            </div>
-            {me && <FriendRow friend={me} self />}
+    <div className="h-full flex flex-col p-4 lg:p-6 overflow-hidden">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h2 className="font-minecraft-ten text-xl text-white">{t("friends.title")}</h2>
+        <span className={`text-xs font-minecraft-ten ${connected ? "text-emerald-400" : "text-amber-300"}`}>{connected ? "Chat conectado" : "Chat desconectado"}</span>
+      </div>
+      {listError && <div role="alert" className="flex items-center gap-3 p-3 mb-3 border border-red-500/30 bg-red-500/10 rounded text-xs text-red-200"><span className="flex-1">{listError}</span><Button size="sm" variant="ghost" disabled={loading} onClick={() => void refresh()}>Reintentar</Button></div>}
+      <div className="flex-1 flex gap-4 min-h-0">
+        <div className={`${activeChatFriend ? "hidden md:block" : ""} w-full md:w-[340px] lg:w-[380px] md:shrink-0 overflow-y-auto custom-scrollbar space-y-4 pr-1`}>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setSection("friends")} className={`flex-1 rounded px-3 py-2 text-xs font-minecraft-ten ${section === "friends" ? "bg-white/10 text-white" : "text-white/45"}`}>Amigos · {friends.length}</button>
+            <button type="button" onClick={() => setSection("requests")} className={`flex-1 rounded px-3 py-2 text-xs font-minecraft-ten ${section === "requests" ? "bg-white/10 text-white" : "text-white/45"}`}>Solicitudes · {incoming.length + outgoing.length}</button>
+            <button type="button" aria-label="Agregar amigo" title="Agregar amigo" onClick={() => setShowAdd(v => !v)} className="p-2 rounded border border-white/10 text-white/70"><Icon icon="solar:user-plus-linear" className="w-5 h-5" /></button>
           </div>
-
+          {section === "friends" && <Input aria-label="Buscar amigos" placeholder="Buscar amigos…" value={filter} onChange={e => setFilter(e.target.value)} />}
+          {showAdd && (
           <div
             className="p-4 rounded-md border"
             style={{ backgroundColor: "#121212cc", borderColor: `${accent}55` }}
@@ -252,6 +262,8 @@ export function FriendsTab() {
             </div>
           </div>
 
+          )}
+          {section === "requests" && <>
           <RequestSection
             title={t("friends.incoming")}
             empty={t("friends.incomingEmpty")}
@@ -299,22 +311,23 @@ export function FriendsTab() {
             )}
           />
 
-          <div className="space-y-2">
+          </>}
+          {section === "friends" && <div className="space-y-2">
             {loading && friends.length === 0 ? (
               <p className="text-white/60 font-minecraft-ten text-sm">{t("friends.loading")}</p>
             ) : friends.length === 0 ? (
               <p className="text-white/55 font-minecraft-ten text-sm">{t("friends.empty")}</p>
             ) : (
-              friends.map((friend) => (
+              friends.filter(friend => friend.username.toLowerCase().includes(filter.toLowerCase())).map((friend) => (
                 <FriendRow
                   key={friend.uuid || friend.username}
                   friend={friend}
                   unread={unread[chatKey(friend.username)] ?? 0}
                   active={activeChatFriend?.username === friend.username}
-                  onChat={() => setActiveChatFriend(friend)}
+                  onChat={() => { chatOwner.current = sessionID; setActiveChatFriend(friend); }}
                   onRemove={() =>
                     void run(
-                      () => removeFriend(friend.username),
+                      async () => { await removeFriend(friend.username); if (activeChatFriend?.username === friend.username) setActiveChatFriend(null); },
                       t("friends.removed", { name: friend.username }),
                     )
                   }
@@ -322,31 +335,30 @@ export function FriendsTab() {
                 />
               ))
             )}
-          </div>
+          </div>}
         </div>
 
         {activeChatFriend && (
           <div
-            className="w-[22rem] border-2 rounded-lg p-4 flex flex-col bg-black/90 shadow-2xl min-h-0"
+            className="flex-1 min-w-0 border rounded-lg p-4 flex flex-col bg-black/25 min-h-0"
             style={{ borderColor: `${accent}80` }}
           >
             <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <PlayerHeadshot
-                  playerName={activeChatFriend.username}
-                  size={28}
-                  alt={activeChatFriend.username}
-                />
-                <span className="font-minecraft text-xl text-white lowercase truncate">
+              <div className="flex flex-1 items-center gap-3 min-w-0">
+                <div className="w-8 h-8 flex-shrink-0 rounded overflow-hidden bg-white/5">
+                  <PlayerHeadshot playerName={activeChatFriend.username} size={32} alt={activeChatFriend.username} />
+                </div>
+                <span className="font-minecraft-ten text-sm text-white truncate">
                   {activeChatFriend.username}
                 </span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setActiveChatFriend(null)}>
+              <Button aria-label="Cerrar conversación" variant="ghost" size="sm" onClick={() => setActiveChatFriend(null)}>
                 <Icon icon="solar:close-circle-bold" className="w-5 h-5" />
               </Button>
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 mb-3 pr-1 min-h-0">
+              {historyError && <p role="alert" className="text-xs text-red-300 p-2">{historyError}</p>}
               {!connected && (
                 <p className="text-[11px] font-minecraft-ten text-amber-300/90 text-center py-1">
                   Reconectando con el servidor de chat…
@@ -381,18 +393,21 @@ export function FriendsTab() {
               <Input
                 value={chatInput}
                 onChange={(e) => handleTyping(e.target.value)}
-                placeholder="Escribe un mensaje…"
+                aria-label="Mensaje" disabled={!connected} placeholder={connected ? "Escribe un mensaje…" : "Esperando conexión…"}
                 maxLength={2000}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleSendMessage();
                 }}
               />
-              <Button variant="success" size="sm" onClick={handleSendMessage} disabled={!chatInput.trim()}>
+              <Button variant="success" size="sm" aria-label="Enviar mensaje" onClick={handleSendMessage} disabled={!connected || !chatInput.trim()}>
                 <Icon icon="solar:plain-bold" className="w-4 h-4" />
               </Button>
             </div>
           </div>
         )}
+        {!activeChatFriend && <div className="hidden md:flex flex-1 rounded-lg border border-white/10 bg-black/20 items-center justify-center text-center p-8">
+          <div className="space-y-3 text-white/40"><Icon icon="solar:chat-round-dots-linear" className="w-12 h-12 mx-auto" /><p className="font-minecraft-ten text-sm">Selecciona un amigo para conversar</p></div>
+        </div>}
       </div>
     </div>
   );
@@ -439,7 +454,7 @@ function ChatBubble({
           ) : (
             <>
               <span>{time}</span>
-              {mine && <Icon icon={msg.pending ? "solar:clock-circle-linear" : "solar:check-read-linear"} className="w-3 h-3" />}
+              {mine && <span aria-label={msg.pending ? "Enviando" : msg.read ? "Leído" : "Enviado"} title={msg.pending ? "Enviando" : msg.read ? "Leído" : "Enviado"}><Icon icon={msg.pending ? "solar:clock-circle-linear" : msg.read ? "solar:check-read-linear" : "solar:check-linear"} className="w-3 h-3" /></span>}
             </>
           )}
         </div>
@@ -463,7 +478,7 @@ function RequestSection({
 }) {
   return (
     <div className="space-y-2">
-      <h3 className="font-minecraft text-2xl text-white/80 lowercase">{title}</h3>
+      <h3 className="font-minecraft-ten text-sm text-white/70">{title}</h3>
       {loading && items.length === 0 ? null : items.length === 0 ? (
         <p className="text-white/45 font-minecraft-ten text-sm">{empty}</p>
       ) : (
@@ -505,7 +520,7 @@ function FriendRow({
       className="flex items-center gap-3 p-3 rounded-md border"
       style={{
         backgroundColor: active ? "#161616e6" : "#0a0a0acc",
-        borderColor: `${friend.rankColor || "#059669"}${active ? "cc" : "55"}`,
+        borderColor: active ? "#059669" : "rgba(255,255,255,0.10)",
       }}
     >
       <div className="relative w-10 h-10 flex-shrink-0">
@@ -521,16 +536,11 @@ function FriendRow({
         />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="font-minecraft text-2xl text-white lowercase truncate">
+        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+          <span className="font-minecraft-ten text-sm text-white truncate">
             {friend.username}
           </span>
-          <RankTag
-            rank={friend.rank}
-            pixelAccount
-            rankLabel={friend.rankLabel}
-            rankColor={friend.rankColor}
-          />
+
         </div>
         <p
           className="text-[11px] font-minecraft-ten uppercase tracking-wide"
@@ -547,7 +557,7 @@ function FriendRow({
           </span>
         )}
         {!self && !pending && onChat && (
-          <Button variant="secondary" size="sm" onClick={onChat} disabled={busy} title="Chat">
+          <Button aria-label={`Chat con ${friend.username}`} className="!px-2 !min-w-0" variant="secondary" size="sm" onClick={onChat} disabled={busy} title="Chat">
             <Icon icon="solar:chat-round-dots-bold" className="w-4 h-4" />
           </Button>
         )}
@@ -567,7 +577,7 @@ function FriendRow({
           </Button>
         )}
         {!self && onRemove && (
-          <Button variant="destructive" size="sm" onClick={onRemove} disabled={busy} title={t("friends.remove")}>
+          <Button aria-label={`Eliminar a ${friend.username}`} className="!px-2 !min-w-0" variant="ghost" size="sm" onClick={onRemove} disabled={busy} title={t("friends.remove")}>
             <Icon icon="solar:trash-bin-trash-bold" className="w-4 h-4" />
           </Button>
         )}

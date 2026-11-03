@@ -219,7 +219,7 @@ export const ModrinthProjectCardV2 = React.memo<ModrinthProjectCardV2Props>(
       >
 
         {/* Stats - absolute oben rechts */}
-        <div className="absolute top-3 right-3 flex items-center space-x-2 text-xs text-gray-400 font-minecraft-ten">
+        {hit.source !== "Horizon" && <div className="absolute top-3 right-3 flex items-center space-x-2 text-xs text-gray-400 font-minecraft-ten">
           {/* Downloads */}
           <div className="text-white/50 flex items-center gap-0.5">
             <svg
@@ -232,7 +232,7 @@ export const ModrinthProjectCardV2 = React.memo<ModrinthProjectCardV2Props>(
             </svg>
             <span>{hit.downloads.toLocaleString()}</span>
           </div>
-        </div>
+        </div>}
 
         {/* Project Icon */}
         <div
@@ -272,7 +272,7 @@ export const ModrinthProjectCardV2 = React.memo<ModrinthProjectCardV2Props>(
               target="_blank"
               rel="noopener noreferrer"
               className="text-white font-minecraft-ten text-lg whitespace-nowrap overflow-hidden text-ellipsis normal-case hover:underline cursor-pointer"
-              title={`Open ${hit.title} on ${hit.source === 'Modrinth' ? 'Modrinth' : 'CurseForge'}`}
+              title={`Open ${hit.title} on ${hit.source}`}
             >
               {hit.title}
             </a>
@@ -299,7 +299,7 @@ export const ModrinthProjectCardV2 = React.memo<ModrinthProjectCardV2Props>(
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-gray-400 truncate font-minecraft-ten flex-shrink min-w-0 hover:text-gray-200 hover:underline cursor-pointer"
-                title={`Open ${hit.author}'s profile on ${hit.source === 'Modrinth' ? 'Modrinth' : 'CurseForge'}`}
+                title={`Open ${hit.author}'s profile on ${hit.source}`}
               >
                 by {hit.author}
               </a>

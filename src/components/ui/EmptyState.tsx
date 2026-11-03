@@ -118,7 +118,7 @@ export function EmptyState({
             "text-white text-center mb-2",
             preserveCase
               ? "font-minecraft-ten normal-case tracking-wide"
-              : "lowercase",
+              : "normal-case",
             compact ? "text-xl" : "text-2xl",
           )}
         >
@@ -131,7 +131,7 @@ export function EmptyState({
               "text-white/70 text-center max-w-md",
               preserveCase
                 ? "font-minecraft-ten normal-case tracking-wide text-base leading-relaxed"
-                : "lowercase",
+                : "normal-case",
               preserveCase ? (compact ? "mb-4" : "mb-6") : compact ? "text-2xl mb-4" : "text-2xl mb-6",
             )}
           >

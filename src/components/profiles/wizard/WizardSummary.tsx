@@ -46,7 +46,7 @@ export function WizardSummary({ profile, error }: WizardSummaryProps) {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-3xl font-minecraft text-white mb-3 lowercase">
+        <h2 className="text-3xl font-minecraft text-white mb-3 normal-case">
           profile summary
         </h2>
         <p className="text-xs text-white/70 font-minecraft-ten tracking-wide">
@@ -73,7 +73,7 @@ export function WizardSummary({ profile, error }: WizardSummaryProps) {
             <Icon icon="solar:user-bold" className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h3 className="text-3xl text-white font-minecraft tracking-wide lowercase">
+            <h3 className="text-3xl text-white font-minecraft tracking-wide normal-case">
               {profile.name}
             </h3>
             {profile.description && (
@@ -97,7 +97,7 @@ export function WizardSummary({ profile, error }: WizardSummaryProps) {
         className="grid grid-cols-1 md:grid-cols-2 gap-6"
       >
         <Card variant="flat" className="p-6 bg-black/20 border border-white/10">
-          <h3 className="text-2xl text-white font-minecraft tracking-wide lowercase mb-4">
+          <h3 className="text-2xl text-white font-minecraft tracking-wide normal-case mb-4">
             minecraft version
           </h3>
           <div className="flex items-center gap-3">
@@ -111,7 +111,7 @@ export function WizardSummary({ profile, error }: WizardSummaryProps) {
         </Card>
 
         <Card variant="flat" className="p-6 bg-black/20 border border-white/10">
-          <h3 className="text-2xl text-white font-minecraft tracking-wide lowercase mb-4">
+          <h3 className="text-2xl text-white font-minecraft tracking-wide normal-case mb-4">
             mod loader
           </h3>
           <div className="flex items-center gap-3">
@@ -134,7 +134,7 @@ export function WizardSummary({ profile, error }: WizardSummaryProps) {
         </Card>
 
         <Card variant="flat" className="p-6 bg-black/20 border border-white/10">
-          <h3 className="text-2xl text-white font-minecraft tracking-wide lowercase mb-4">
+          <h3 className="text-2xl text-white font-minecraft tracking-wide normal-case mb-4">
             memory allocation
           </h3>
           <div className="flex items-center gap-3">
@@ -144,7 +144,7 @@ export function WizardSummary({ profile, error }: WizardSummaryProps) {
                 className="w-6 h-6 text-white"
               />
             </div>
-            <div className="text-xs text-white font-minecraft-ten tracking-wide lowercase">
+            <div className="text-xs text-white font-minecraft-ten tracking-wide normal-case">
               {profile.settings?.memory?.max} MB (
               {(profile.settings?.memory?.max || 0) / 1024} GB)
             </div>
@@ -160,7 +160,7 @@ export function WizardSummary({ profile, error }: WizardSummaryProps) {
               <div className="w-10 h-10 flex items-center justify-center rounded-md bg-black/30 border border-white/20">
                 <Icon icon="solar:shield-bold" className="w-6 h-6 text-white" />
               </div>
-              <div className="text-xl text-white font-minecraft tracking-wide lowercase">
+              <div className="text-xl text-white font-minecraft tracking-wide normal-case">
                 {profile.selected_pixelplay_pack_id}
               </div>
             </div>

@@ -227,7 +227,7 @@ export const RadioButton = forwardRef<HTMLInputElement, RadioButtonProps>(
           className={cn(
             "font-minecraft relative overflow-hidden backdrop-blur-md transition-all duration-200",
             radiusClass,
-            "text-white tracking-wider lowercase",
+            "text-white tracking-wider normal-case",
             "flex items-center gap-3 cursor-pointer",
             "text-shadow-sm",
             variant !== "ghost" && shadowDepth !== "none" && "border-2 border-b-4",

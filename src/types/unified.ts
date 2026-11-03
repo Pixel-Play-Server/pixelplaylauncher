@@ -1,6 +1,7 @@
 import type { ModLoader, Mod, ModPackSource } from './profile';
 
 export enum ModPlatform {
+  Horizon = "Horizon",
   Modrinth = "Modrinth",
   CurseForge = "CurseForge",
 }

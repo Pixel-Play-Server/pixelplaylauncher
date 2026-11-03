@@ -185,7 +185,7 @@ export function PlayerActionsDisplay({
             }}
           />
         ) : (
-          <h2 className="font-minecraft text-6xl text-center text-white lowercase font-normal tracking-wide drop-shadow-md">
+          <h2 className="font-minecraft text-6xl text-center text-white normal-case font-normal tracking-wide drop-shadow-md">
             {playerName || t("launcher.noProfileSelected")}
           </h2>
         )}
@@ -439,7 +439,7 @@ function SideGhostSkin({
       <div ref={motionRef} className="relative">
       <span
         ref={tagRef}
-        className="pointer-events-none absolute z-40 whitespace-nowrap rounded-md px-3 py-1 font-minecraft text-xl lowercase tracking-wide text-white"
+        className="pointer-events-none absolute z-40 whitespace-nowrap rounded-md px-3 py-1 font-minecraft text-xl normal-case tracking-wide text-white"
         style={{
           top: 6,
           left: "50%",
@@ -573,7 +573,7 @@ function ExtraAccountChip({
     >
       <span
         ref={tagRef}
-        className="pointer-events-none absolute bottom-full z-40 mb-2 whitespace-nowrap rounded-md px-2 py-0.5 font-minecraft text-lg lowercase text-white"
+        className="pointer-events-none absolute bottom-full z-40 mb-2 whitespace-nowrap rounded-md px-2 py-0.5 font-minecraft text-lg normal-case text-white"
         style={{
           left: "50%",
           backgroundColor: `${accent}CC`,

@@ -23,7 +23,6 @@ import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
 import type { pixelplayModpacksConfig } from "../../types/pixelplayPacks";
 import { isProfileAuthorProtected } from "../../utils/author-protection";
-import { FeaturedServerBanner } from "../profiles/FeaturedServerBanner";
 
 export function ProfilesTabV2() {
   const {
@@ -94,12 +93,12 @@ export function ProfilesTabV2() {
     },
   ];
   
-  // Get unique profile groups dynamically (normalized to lowercase)
+  // Get unique profile groups dynamically (normalized to normal-case)
   const getUniqueProfileGroups = () => {
     const uniqueGroups = new Set<string>();
     profiles.forEach(profile => {
       if (profile.group && profile.group.trim() !== "") {
-        // Normalize to lowercase to avoid duplicates like "Custom" and "CUSTOM"
+        // Normalize to normal-case to avoid duplicates like "Custom" and "CUSTOM"
         uniqueGroups.add(profile.group.toLowerCase());
       }
     });
@@ -122,7 +121,7 @@ export function ProfilesTabV2() {
     if (groupId === "server") return profiles.filter(p => p.group === "SERVER").length;
     if (groupId === "modpacks") return profiles.filter(p => p.group === "MODPACKS").length;
     
-    // Handle dynamic groups (groupId is normalized lowercase, compare with profile.group in lowercase)
+    // Handle dynamic groups (groupId is normalized normal-case, compare with profile.group in normal-case)
     return profiles.filter(p => p.group && p.group.toLowerCase() === groupId).length;
   };
 
@@ -142,8 +141,8 @@ export function ProfilesTabV2() {
         !isNrcGroup(group) // Exclude all NRC variations
       )
       .map(group => ({
-        id: group, // group is already lowercase from getUniqueProfileGroups
-        name: group, // group is already lowercase from getUniqueProfileGroups
+        id: group, // group is already normal-case from getUniqueProfileGroups
+        name: group, // group is already normal-case from getUniqueProfileGroups
         count: getFilteredCountForGroup(group), // Use the updated function
       }));
 
@@ -377,7 +376,7 @@ export function ProfilesTabV2() {
                 const nextMode = layoutMode === "list" ? "grid" : layoutMode === "grid" ? "compact" : "list";
                 setProfilesTabLayoutMode(nextMode);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-black/30 hover:bg-black/40 text-white/70 hover:text-white border border-white/10 hover:border-white/20 rounded-lg font-minecraft text-2xl lowercase transition-all duration-200 min-h-[2.5rem]"
+              className="flex items-center gap-2 px-4 py-2 bg-black/30 hover:bg-black/40 text-white/70 hover:text-white border border-white/10 hover:border-white/20 rounded-lg font-minecraft text-2xl normal-case transition-all duration-200 min-h-[2.5rem]"
               title={
                 layoutMode === "list" 
                   ? "Switch to grid view (2 profiles per row)" 
@@ -399,9 +398,6 @@ export function ProfilesTabV2() {
         </div>
       </div>
 
-      {(activeGroup === "all" || activeGroup === "server") && (
-        <FeaturedServerBanner />
-      )}
 
       {/* Profile list */}
       <div className={

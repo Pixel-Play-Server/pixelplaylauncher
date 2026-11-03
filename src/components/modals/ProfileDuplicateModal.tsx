@@ -106,7 +106,7 @@ export function ProfileDuplicateModal() {
     >
       <div className="space-y-6 p-6">
         <div className="text-center">
-          <p className="text-2xl font-minecraft text-white/80 mb-4 lowercase">
+          <p className="text-2xl font-minecraft text-white/80 mb-4 normal-case">
             duplicate profile "{sourceProfile.name}"
           </p>
           <p className="text-xs text-white/60 font-minecraft-ten tracking-wide">
@@ -115,7 +115,7 @@ export function ProfileDuplicateModal() {
         </div>
 
         <div>
-          <label className="block text-2xl font-minecraft text-white mb-2 lowercase">
+          <label className="block text-2xl font-minecraft text-white mb-2 normal-case">
             new profile name
           </label>
           <Input

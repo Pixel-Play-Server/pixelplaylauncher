@@ -111,7 +111,7 @@ export function SurvivalTab() {
     <div className="h-full overflow-y-auto custom-scrollbar p-6">
       <div className="max-w-6xl w-full mr-auto space-y-5">
         <div>
-          <h2 className="font-minecraft text-4xl text-white lowercase">{t("survival.title")}</h2>
+          <h2 className="font-minecraft text-4xl text-white normal-case">{t("survival.title")}</h2>
           <p className="text-white/60 font-minecraft-ten text-sm mt-1">{t("survival.subtitle")}</p>
         </div>
 
@@ -177,7 +177,7 @@ export function SurvivalTab() {
                         />
                       </span>
                       <span className="min-w-0">
-                        <span className="block font-minecraft text-xl text-white lowercase truncate">
+                        <span className="block font-minecraft text-xl text-white normal-case truncate">
                           {player.username}
                         </span>
                         <RankTag
@@ -210,7 +210,7 @@ export function SurvivalTab() {
                   <PlayerHeadshot playerName={detail.username} size={56} alt={detail.username} />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-minecraft text-3xl text-white lowercase truncate">{detail.username}</p>
+                  <p className="font-minecraft text-3xl text-white normal-case truncate">{detail.username}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <RankTag
                       rank={detail.rank}
@@ -257,7 +257,7 @@ function Stat({ label, value, color }: { label: string; value: string; color?: s
   return (
     <div className="rounded-sm border border-white/10 px-3 py-2">
       <p className="text-[10px] font-minecraft-ten uppercase tracking-wide text-white/40">{label}</p>
-      <p className="font-minecraft text-2xl lowercase" style={{ color: color || "#fff" }}>
+      <p className="font-minecraft text-2xl normal-case" style={{ color: color || "#fff" }}>
         {value}
       </p>
     </div>

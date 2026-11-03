@@ -8,7 +8,6 @@ import { useDisplayContextStore } from "../../../store/useDisplayContextStore";
 import { Icon } from "@iconify/react";
 import { Card } from "../../ui/Card";
 import { ModrinthSearchV2 } from "../../modrinth/v2/ModrinthSearchV2";
-import { HorizonRegistry } from "../HorizonRegistry";
 import { ProfileIconV2 } from "../ProfileIconV2";
 import { ActionButtons, type ActionButton } from "../../ui/ActionButtons";
 import * as ProfileService from "../../../services/profile-service";
@@ -170,7 +169,7 @@ export function BrowseTab({
 
   return (
     <div ref={containerRef} className="h-full flex flex-col overflow-hidden p-4 relative">
-      <div className={`flex-1 ${false ? "flex flex-col min-h-0" : "overflow-y-auto no-scrollbar"}`}>
+      <div className="flex-1 overflow-y-auto no-scrollbar">
         {/* Profile Header Section */}
         <div className="mb-1 flex-shrink-0">
           <div className="flex items-center gap-4 mb-4">
@@ -252,11 +251,6 @@ export function BrowseTab({
 
         {/* Content Area */}
         <div className="flex-1 min-h-0">
-          {currentProfile.loader === "horizon" && getProjectType() === "mod" ? (
-            <HorizonRegistry profileId={currentProfile.id} />
-          ) : currentProfile.loader === "horizon" ? (
-            <div className="rounded border border-white/20 p-6 text-white/70">Los paquetes Java de Modrinth y CurseForge no son compatibles con Horizon. El catálogo de Horizon contiene mods .hmod; vuelve a la pestaña Mods para instalarlos.</div>
-          ) : (
           <ModrinthSearchV2
             profiles={[currentProfile]}
             selectedProfileId={currentProfile.id}
@@ -267,7 +261,6 @@ export function BrowseTab({
             overrideDisplayContext="detail"
             disableVirtualization={true}
           />
-          )}
         </div>
       </div>
     </div>

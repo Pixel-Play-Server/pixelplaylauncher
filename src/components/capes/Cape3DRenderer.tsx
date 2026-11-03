@@ -312,7 +312,7 @@ export function Cape3DRenderer({
             />
           )}
           {inView && isLoading && !errorMessage && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white px-3 py-1.5 rounded text-xs font-minecraft lowercase">
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white px-3 py-1.5 rounded text-xs font-minecraft normal-case">
               Loading 3D...
             </div>
           )}

@@ -4,6 +4,9 @@ import type { CallState, ChatMessage } from "../services/pixel-friends-service";
 const key = (name: string) => name.toLowerCase();
 
 type SocialState = {
+  markSeen: (peer: string) => void;
+  resetSession: () => void;
+  retryMessage: (peer: string, cid: string) => void;
   connected: boolean;
   me: string;
   call: CallState | null;
@@ -55,6 +58,9 @@ type SocialState = {
 };
 
 export const useSocialCallStore = create<SocialState>((set) => ({
+  markSeen: peer => set(s => ({ chats: { ...s.chats, [key(peer)]: (s.chats[key(peer)] ?? []).map(m => key(m.to) === key(peer) && !m.pending && !m.failed ? { ...m, read: true } : m) } })),
+  resetSession: () => set({ connected: false, me: "", call: null, chats: {}, unread: {}, typing: {}, activeChatUsername: null, micLevel: 0, localFrame: null, remoteFrame: null, cameraStream: null, remoteStream: null, cameraOn: false }),
+  retryMessage: (peer, cid) => set(s => ({ chats: { ...s.chats, [key(peer)]: (s.chats[key(peer)] ?? []).map(m => m.cid === cid ? { ...m, failed: false, pending: true } : m) } })),
   connected: false,
   me: "",
   call: null,
@@ -101,8 +107,12 @@ export const useSocialCallStore = create<SocialState>((set) => ({
   setActiveChatUsername: (username) => set({ activeChatUsername: username }),
   setHistory: (withUser, messages) =>
     set((s) => {
-      const pending = (s.chats[key(withUser)] ?? []).filter((m) => m.pending || m.failed);
-      return { chats: { ...s.chats, [key(withUser)]: [...messages, ...pending] } };
+      const merged = [...messages];
+      for (const current of s.chats[key(withUser)] ?? []) {
+        if (!merged.some(m => m.id === current.id || (m.cid && m.cid === current.cid))) merged.push(current);
+      }
+      merged.sort((a, b) => a.ts - b.ts);
+      return { chats: { ...s.chats, [key(withUser)]: merged } };
     }),
   addMessage: (msg, peer) =>
     set((s) => {
@@ -116,7 +126,9 @@ export const useSocialCallStore = create<SocialState>((set) => ({
       const next = list.map((m) =>
         m.cid === cid ? (msg ? { ...msg, cid } : { ...m, pending: false, failed: true }) : m,
       );
-      return { chats: { ...s.chats, [key(peer)]: next } };
+      if (msg && !list.some(m => m.cid === cid)) next.push({ ...msg, cid });
+      const unique = next.filter((m, i) => next.findIndex(n => n.id === m.id) === i);
+      return { chats: { ...s.chats, [key(peer)]: unique } };
     }),
   setUnread: (unread) =>
     set({ unread: Object.fromEntries(Object.entries(unread).map(([k, v]) => [key(k), v])) }),

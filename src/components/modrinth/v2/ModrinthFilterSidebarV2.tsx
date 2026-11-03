@@ -102,7 +102,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
         ref={buttonRef}
         onClick={toggleAccordion}
         className={cn(
-          "w-full px-3 py-2.5 text-left font-minecraft text-white flex justify-between items-center focus:outline-none transition-colors lowercase text-2xl",
+          "w-full px-3 py-2.5 text-left font-minecraft text-white flex justify-between items-center focus:outline-none transition-colors normal-case text-2xl",
           isOpen && "border-b border-white/10", 
           "hover:bg-white/5",
           "relative z-10"

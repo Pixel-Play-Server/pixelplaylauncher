@@ -29,7 +29,7 @@ export const RadiusPicker = ({ className }: RadiusPickerProps) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Icon icon="solar:widget-bold" className="w-5 h-5 text-white" />
-          <h3 className="text-lg font-minecraft text-white lowercase">Border Radius</h3>
+          <h3 className="text-lg font-minecraft text-white normal-case">Border Radius</h3>
         </div>
         <span className="text-sm text-white/60 font-minecraft-ten">
           {borderRadius}px ({getRadiusLabel(borderRadius)})

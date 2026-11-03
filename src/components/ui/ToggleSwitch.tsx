@@ -196,7 +196,7 @@ export function ToggleSwitch({
       {label && (
         <span
           className={cn(
-            "font-minecraft lowercase text-white",
+            "font-minecraft normal-case text-white",
             sizeConfig.label,
           )}
         >

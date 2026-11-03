@@ -25,6 +25,7 @@ type SocialEvent = {
   user?: string;
   reason?: string;
   with?: string;
+  by?: string;
   sdp?: string;
   candidate?: string;
   sdpMid?: string;
@@ -64,23 +65,34 @@ export function useSocialPoll() {
   const isPixel = Boolean(activeAccount?.pixel_account);
 
   useEffect(() => {
-    if (!isPixel) return;
     const st = useSocialCallStore.getState;
+    st().resetSession();
+    if (!isPixel) return;
+    let disposed = false;
+    const sessionID = activeAccount?.id;
+    const currentSession = () => !disposed && useMinecraftAuthStore.getState().activeAccount?.id === sessionID;
+    const fetchUnread = () => socialUnread().then(u => { if (currentSession()) st().setUnread(u); }).catch(() => undefined);
     bindWebRTCHandlers();
 
     void socialStatus()
       .then((s) => {
+        if (!currentSession()) return;
         st().setConnected(s.connected, s.user);
         st().setCall(s.call);
         void startWebRTCIfNeeded(s.call).catch(() => undefined);
       })
       .catch(() => undefined);
-    void socialUnread().then((u) => st().setUnread(u)).catch(() => undefined);
+    void fetchUnread();
 
+    const markVisibleChatRead = () => {
+      const peer = st().activeChatUsername;
+      if (currentSession() && windowActive() && peer) void socialMarkRead(peer).then(() => { if (currentSession()) st().clearUnread(peer); }).catch(() => undefined);
+    };
+    window.addEventListener("focus", markVisibleChatRead);
+    document.addEventListener("visibilitychange", markVisibleChatRead);
     const offs: Array<() => void> = [];
-    let disposed = false;
     const on = <T,>(name: string, fn: (payload: T) => void) => {
-      void listen<T>(name, (e) => fn(e.payload)).then((off) => (disposed ? off() : offs.push(off)));
+      void listen<T>(name, (e) => { if (currentSession()) fn(e.payload); }).then((off) => (disposed ? off() : offs.push(off)));
     };
 
     on<Parameters<typeof webrtcCall.handleNativeMedia>[0]>("social_native_media", (ev) => webrtcCall.handleNativeMedia(ev));
@@ -90,7 +102,7 @@ export function useSocialPoll() {
       switch (ev.t) {
         case "status":
           st().setConnected(Boolean(ev.connected), ev.user);
-          if (ev.connected) void socialUnread().then((u) => st().setUnread(u)).catch(() => undefined);
+          if (ev.connected) void fetchUnread();
           break;
         case "hello":
           st().setConnected(true, (ev as { me?: { username?: string } }).me?.username);
@@ -110,21 +122,38 @@ export function useSocialPoll() {
           if (!m) return;
           const mine = m.from.toLowerCase() === me;
           const peer = mine ? m.to : m.from;
-          if (ev.cid) st().resolvePending(ev.cid, m, peer);
+          const duplicate = (st().chats[chatKey(peer)] ?? []).some(existing => existing.id === m.id && !existing.pending);
+          const cid = ev.cid || m.cid;
+          if (cid) st().resolvePending(cid, m, peer);
           else st().addMessage(m, peer);
-          if (mine) return;
+          if (mine || duplicate) return;
           const open = st().activeChatUsername && chatKey(st().activeChatUsername!) === chatKey(m.from);
           if (open && windowActive()) {
-            void socialMarkRead(m.from).catch(() => undefined);
+            void socialMarkRead(m.from).then(() => { if (currentSession()) st().clearUnread(m.from); }).catch(() => undefined);
             return;
           }
           st().bumpUnread(m.from);
           if (m.kind === "text" || !m.kind) {
-            if (!open) toast(`💬 ${m.from}: ${m.text}`, { duration: 4000 });
+            if (!open && windowActive()) toast(`💬 ${m.from}: ${m.text}`, { duration: 4000 });
             if (!windowActive()) void desktopNotify(`Mensaje de ${m.from}`, m.text.slice(0, 140));
           }
           break;
         }
+        case "error": {
+          if (ev.cid) {
+            for (const [peer, messages] of Object.entries(st().chats)) {
+              if (messages.some(m => m.cid === ev.cid)) st().resolvePending(ev.cid, null, peer);
+            }
+          }
+          if (ev.error) toast.error(ev.error, { id: ev.cid ? `social-error-${ev.cid}` : "social-error" });
+          break;
+        }
+        case "read":
+          if (ev.with) st().clearUnread(ev.with);
+          break;
+        case "seen":
+          if (ev.by) st().markSeen(ev.by);
+          break;
         case "typing": {
           const from =
             typeof ev.from === "string" ? ev.from : (ev.from as { username?: string } | undefined)?.username;
@@ -132,6 +161,7 @@ export function useSocialPoll() {
           break;
         }
         case "call": {
+          if (!CALLS_ENABLED) break;
           const fromName =
             typeof ev.from === "string"
               ? ev.from
@@ -168,7 +198,10 @@ export function useSocialPoll() {
 
     return () => {
       disposed = true;
+      window.removeEventListener("focus", markVisibleChatRead);
+      document.removeEventListener("visibilitychange", markVisibleChatRead);
       offs.forEach((off) => off());
+      st().resetSession();
       void webrtcCall.stop();
     };
   }, [isPixel, activeAccount?.id]);

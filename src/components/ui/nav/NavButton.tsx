@@ -13,7 +13,7 @@ interface NavButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const NavButton = forwardRef<HTMLButtonElement, NavButtonProps>(
   (
-    { className, icon, isActive = false, variant = "default", ...props },
+    { className, icon, children, isActive = false, variant = "default", ...props },
     ref,
   ) => {
     const buttonRef = useRef<HTMLButtonElement>(null);
@@ -110,6 +110,7 @@ export const NavButton = forwardRef<HTMLButtonElement, NavButtonProps>(
         <span className="relative z-10 flex items-center justify-center w-8 h-8">
           {icon}
         </span>
+        {children}
       </button>
     );
   },

@@ -48,10 +48,10 @@ export function CreditsModal({ isOpen, onClose }: CreditsModalProps) {
               </div>
               <div className="min-h-[3rem] flex flex-col justify-center">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-minecraft text-white lowercase tracking-wider">
+                  <span className="text-2xl font-minecraft text-white normal-case tracking-wider">
                     Joacoorandom
                   </span>
-                  <span className="text-white/50 font-minecraft text-lg lowercase">
+                  <span className="text-white/50 font-minecraft text-lg normal-case">
                     Developer
                   </span>
                 </div>
@@ -59,7 +59,7 @@ export function CreditsModal({ isOpen, onClose }: CreditsModalProps) {
             </div>
             <div className="flex items-center gap-2">
               <div className="text-right mr-3">
-                <p className="text-white/80 font-minecraft text-lg lowercase tracking-wide" title="(sirknubble did it better)">
+                <p className="text-white/80 font-minecraft text-lg normal-case tracking-wide" title="(sirknubble did it better)">
                   UI, frontend & backend
                 </p>
               </div>
@@ -86,14 +86,14 @@ export function CreditsModal({ isOpen, onClose }: CreditsModalProps) {
               </div>
               <div className="min-h-[3rem] flex flex-col justify-center">
                 <div className="flex items-baseline gap-2">
-                  <h4 className="text-2xl font-minecraft text-white lowercase tracking-wider">
+                  <h4 className="text-2xl font-minecraft text-white normal-case tracking-wider">
                     Pixel Play
                   </h4>
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-white/80 font-minecraft text-lg lowercase tracking-wide">
+              <p className="text-white/80 font-minecraft text-lg normal-case tracking-wide">
                 Backend & Core
               </p>
             </div>
@@ -107,7 +107,7 @@ export function CreditsModal({ isOpen, onClose }: CreditsModalProps) {
               onClick={() => handleOpenUrl("https://discord.pixelplay.gg")}
             >
               <Icon icon="solar:external-link-bold" className="w-5 h-5" />
-              <span className="font-minecraft text-lg lowercase">Join Discord</span>
+              <span className="font-minecraft text-lg normal-case">Join Discord</span>
             </Button>
           </div>
         </div>

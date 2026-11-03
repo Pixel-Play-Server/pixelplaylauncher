@@ -58,7 +58,7 @@ export const VanillaCapeImage = React.memo(function VanillaCapeImage({
 
     const img = new Image();
     img.crossOrigin = 'anonymous'; 
-    img.src = imageUrl;
+
 
     const onLoad = () => {
       if (!canvasRef.current) {
@@ -111,6 +111,7 @@ export const VanillaCapeImage = React.memo(function VanillaCapeImage({
     
     img.addEventListener('load', onLoad);
     img.addEventListener('error', onError);
+    img.src = imageUrl.replace(/^http:\/\//, 'https://');
 
     return () => {
       img.removeEventListener('load', onLoad);

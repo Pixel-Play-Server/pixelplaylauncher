@@ -41,7 +41,7 @@ export function ProfileWizardV2Step2({
   const [showNoVersionsFound, setShowNoVersionsFound] = useState(false);
 
   const modLoaders: { key: ModLoader; label: string; icon: string; backgroundImage: string }[] = [
-    { key: "horizon", label: "Horizon (26.3)", icon: "solar:planet-bold", backgroundImage: "/icons/minecraft.png" },
+    { key: "horizon", label: "Horizon", icon: "solar:planet-bold", backgroundImage: "/icons/minecraft.png" },
     { key: "vanilla", label: "Vanilla", icon: "solar:gamepad-bold", backgroundImage: "/icons/minecraft.png" },
     { key: "fabric", label: "Fabric", icon: "solar:box-bold", backgroundImage: "/icons/fabric.png" },
     { key: "forge", label: "Forge", icon: "solar:hammer-bold", backgroundImage: "/icons/forge.png" },
@@ -54,6 +54,7 @@ export function ProfileWizardV2Step2({
     const fetchVersions = async () => {
       if (selectedLoader === "vanilla" || selectedLoader === "horizon") {
         setLoaderVersions([]);
+        setLoadingVersions(false);
         setSelectedLoaderVersion(null);
         setShowLoadingIndicator(false);
         setShowNoVersionsFound(false);
@@ -132,6 +133,7 @@ export function ProfileWizardV2Step2({
         console.error(`Failed to fetch ${selectedLoader} versions:`, err);
         setError(`Failed to load ${selectedLoader} versions. Please try again.`);
         setLoaderVersions([]);
+        setLoadingVersions(false);
         setSelectedLoaderVersion(null);
         setShowNoVersionsFound(false);
       } finally {
@@ -154,7 +156,7 @@ export function ProfileWizardV2Step2({
       return (
         <div className="flex flex-col items-center justify-center h-64">
           <Icon icon="solar:refresh-bold" className="w-12 h-12 text-white animate-spin mb-4" />
-          <p className="text-xl font-minecraft text-white lowercase">loading...</p>
+          <p className="text-xl font-minecraft text-white normal-case">loading...</p>
         </div>
       );
     }
@@ -170,7 +172,7 @@ export function ProfileWizardV2Step2({
           {modLoaders.map(loader => (
             <div
               key={loader.key}
-              className={`relative p-4 h-28 cursor-pointer transition-all duration-200 border-2 rounded-lg overflow-hidden ${
+              className={`${loader.key === "horizon" && selectedMinecraftVersion !== "26.3" ? "opacity-40 cursor-not-allowed" : ""} relative p-4 h-28 cursor-pointer transition-all duration-200 border-2 rounded-lg overflow-hidden ${
                 selectedLoader === loader.key
                   ? "border-current hover:bg-current/15"
                   : "border-transparent hover:bg-black/30"
@@ -185,7 +187,9 @@ export function ProfileWizardV2Step2({
                   color: accentColor.value
                 } : {})
               }}
-              onClick={() => setSelectedLoader(loader.key)}
+              aria-disabled={loader.key === "horizon" && selectedMinecraftVersion !== "26.3"}
+              title={loader.key === "horizon" && selectedMinecraftVersion !== "26.3" ? "Available for Minecraft 26.3" : loader.label}
+              onClick={() => { if (loader.key !== "horizon" || selectedMinecraftVersion === "26.3") setSelectedLoader(loader.key); }}
             >
               {/* Dark overlay for better text readability */}
               <div className={`absolute inset-0 transition-all duration-200 ${
@@ -196,7 +200,7 @@ export function ProfileWizardV2Step2({
               
               {/* Content */}
               <div className="relative z-10 flex flex-col items-center text-center justify-center h-full">
-                <h4 className="font-minecraft text-4xl text-white lowercase drop-shadow-lg">
+                <h4 className="font-minecraft text-4xl text-white normal-case drop-shadow-lg">
                   {loader.label}
                 </h4>
               </div>
@@ -208,14 +212,14 @@ export function ProfileWizardV2Step2({
         <div className="h-20 flex items-center flex-shrink-0">
           {(selectedLoader === "vanilla" || selectedLoader === "horizon") ? (
             <div className="text-center w-full">
-              <p className="text-lg font-minecraft text-white/50 lowercase">
+              <p className="text-lg font-minecraft text-white/50 normal-case">
                 {selectedLoader === "horizon" ? "Horizon runs Minecraft 26.3 (native Rust engine)" : "no additional version required"}
               </p>
             </div>
           ) : showLoadingIndicator ? (
             <div className="flex items-center justify-center w-full">
               <Icon icon="solar:refresh-bold" className="w-6 h-6 text-white animate-spin mr-3" />
-              <p className="text-lg font-minecraft text-white lowercase">loading versions...</p>
+              <p className="text-lg font-minecraft text-white normal-case">loading versions...</p>
             </div>
           ) : loaderVersions.length > 0 ? (
             <Select
@@ -232,7 +236,7 @@ export function ProfileWizardV2Step2({
           ) : showNoVersionsFound ? (
             <div className="text-center w-full">
               <Icon icon="solar:danger-triangle-bold" className="w-8 h-8 text-white/50 mx-auto mb-2" />
-              <p className="text-base font-minecraft text-white/70 lowercase">
+              <p className="text-base font-minecraft text-white/70 normal-case">
                 no {selectedLoader} versions available for {selectedMinecraftVersion}
               </p>
             </div>

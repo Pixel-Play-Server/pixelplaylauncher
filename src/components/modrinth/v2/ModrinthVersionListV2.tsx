@@ -218,7 +218,7 @@ export const ModrinthVersionListV2: React.FC<ModrinthVersionListV2Props> = ({
             .filter((v) => v.version_type === "release")
             .map((v) => v.version),
         );
-        availableGVs = availableGVs.filter((gv) => releaseVersions.has(gv));
+        availableGVs = availableGVs.filter((gv) => releaseVersions.has(gv) || versions.some((v) => v.source === "Horizon" && v.game_versions.includes(gv)));
       }
     }
 

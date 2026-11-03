@@ -250,36 +250,33 @@ export function AppLayout({
   return (
     <div
       ref={launcherRef}
-      className="h-screen w-full overflow-hidden relative flex border border-white/10"
+      className="pixel-shell font-minecraft-ten h-screen w-full overflow-hidden relative flex border border-white/10"
       style={{
         backgroundColor,
-        backgroundImage: `
-          radial-gradient(ellipse 90% 70% at 18% 35%, ${accent}28 0%, transparent 55%),
-          radial-gradient(ellipse 70% 55% at 85% 75%, ${accent}16 0%, transparent 50%),
-          linear-gradient(165deg, #121218 0%, #07070a 55%, #050507 100%)
-        `,
-        boxShadow: `inset 0 0 80px rgba(0,0,0,0.45)`,
+        backgroundImage: `radial-gradient(ellipse at 0% 20%, ${accent}20, transparent 60%), linear-gradient(150deg, #121218, #08080c)`,
+
       }}
     >
-      <BorderGlowEffects accentColor={themeAccentColor.value} />
+
 
       <VerticalNavbar
         items={navItems}
         activeItem={activeTab}
         onItemClick={onNavChange}
-        className="h-full border-r-2 z-10"
+        className="h-full z-10"
         version={appConfig.version}
       />
 
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
         <HeaderBar
+          pageTitle={navItems.find(item => item.id === (activeTab.startsWith("profiles") ? "profiles" : activeTab === "capes" ? "skins" : activeTab.split("/")[0]))?.label || "Pixel Play"}
           minimizeRef={minimizeRef}
           maximizeRef={maximizeRef}
           closeRef={closeRef}
         />
 
         <div className="flex-1 relative overflow-hidden">
-          <Suspense fallback={null}>{renderBackgroundEffect()}</Suspense>
+          <div className="absolute inset-0 opacity-[0.12] pointer-events-none"><Suspense fallback={null}>{renderBackgroundEffect()}</Suspense></div>
 
           <div className="relative z-10 h-full overflow-hidden custom-scrollbar">
             {children}
@@ -327,12 +324,13 @@ function BorderGlowEffects({ accentColor }: { accentColor: string }) {
 }
 
 interface HeaderBarProps {
+  pageTitle: string;
   minimizeRef: React.RefObject<HTMLDivElement>;
   maximizeRef: React.RefObject<HTMLDivElement>;
   closeRef: React.RefObject<HTMLDivElement>;
 }
 
-function HeaderBar({ minimizeRef, maximizeRef, closeRef }: HeaderBarProps) {
+function HeaderBar({ pageTitle, minimizeRef, maximizeRef, closeRef }: HeaderBarProps) {
   const accentColor = useThemeStore((state) => state.accentColor);
   const [appVersion, setAppVersion] = useState<string | null>(null);
 
@@ -351,11 +349,11 @@ function HeaderBar({ minimizeRef, maximizeRef, closeRef }: HeaderBarProps) {
 
   return (
     <div
-      className="h-16 flex-shrink-0 border-b border-white/10 flex items-center justify-between px-6 z-10"
+      className="pixel-titlebar h-[76px] flex-shrink-0 border-b border-white/10 flex items-center justify-between px-6 gap-4 z-10"
       style={{
         borderColor: `${accentColor.value}33`,
         background:
-          "linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(0,0,0,0.28))",
+          "linear-gradient(to bottom, rgba(255,255,255,0.03), rgba(0,0,0,0.3))",
         // Wails frameless drag region (replaces GNOME CSD titlebar)
         ["--wails-draggable" as string]: "drag",
       }}
@@ -364,14 +362,14 @@ function HeaderBar({ minimizeRef, maximizeRef, closeRef }: HeaderBarProps) {
       <div className="flex items-center gap-4" data-tauri-drag-region>
         <NavigationHistory />
 
-        <div className="flex flex-col items-start -mt-1.5">
+        <div className="flex flex-col items-start gap-1">
           <h1
-            className="font-minecraft text-3xl tracking-wider text-white font-bold lowercase text-shadow"
+            className="font-minecraft-ten text-base text-white"
             data-tauri-drag-region
           >
-            Pixel Play
+            {pageTitle}
           </h1>
-          <span className="text-white/70 font-minecraft-ten text-[8px] font-normal -mt-2.5">
+          <span className="text-white/40 text-[11px] font-medium">
             {appVersion || "v?.?.?"}
           </span>
         </div>

@@ -15,7 +15,7 @@ import {
   socialMute,
 } from "../../services/pixel-friends-service";
 import { listMediaDevices, webrtcCall } from "../../services/webrtc-call";
-import { useSocialPoll } from "../../hooks/useSocialPoll";
+
 
 const fail = (err: unknown) => toast.error(err instanceof Error ? err.message : String(err));
 
@@ -163,7 +163,7 @@ export function GlobalCallOverlay() {
   const mediaStatus = useSocialCallStore((s) => s.mediaStatus);
   const elapsed = useElapsed(call?.state === "active" ? call.since : undefined);
 
-  useSocialPoll();
+
 
   const refreshDevices = useCallback(async () => {
     setLoadingDevices(true);
@@ -266,7 +266,7 @@ export function GlobalCallOverlay() {
         >
           <PlayerHeadshot playerName={name} size={28} alt={name} />
           <div className="text-left">
-            <p className="font-minecraft text-base text-white lowercase leading-none">{name}</p>
+            <p className="font-minecraft text-base text-white normal-case leading-none">{name}</p>
             <p className="font-minecraft-ten text-[10px] text-white/50">{status}</p>
           </div>
           {!call.muted && (
@@ -333,7 +333,7 @@ export function GlobalCallOverlay() {
           )}
 
           <div className="text-center">
-            <p className="font-minecraft text-2xl lowercase text-white">
+            <p className="font-minecraft text-2xl normal-case text-white">
               {ringingIn ? "Llamada de " : ringingOut ? "Llamando a " : "Con "}
               <span className="font-bold" style={{ color: accent }}>
                 {name}

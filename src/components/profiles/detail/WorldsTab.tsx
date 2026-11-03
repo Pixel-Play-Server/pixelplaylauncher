@@ -565,7 +565,7 @@ export function WorldsTab({
   };
 
   const effectiveSearchQuery = searchQuery || localSearchQuery;
-  const primaryFeaturedServer = servers.find((s) => s.is_featured && s.address);
+
 
   // --- Render Item Function for GenericList ---
   const renderDisplayItem = useCallback(
@@ -793,11 +793,7 @@ export function WorldsTab({
                             {pingInfo.version_name}
                           </TagBadge>
                         )}
-                        {item.is_featured && (
-                          <TagBadge size="sm" variant="info">
-                            Destacado
-                          </TagBadge>
-                        )}
+
                       </>
                     );
                   })()
@@ -965,19 +961,7 @@ export function WorldsTab({
         )}
 
         <div className="flex items-center gap-4 ml-auto">
-          {primaryFeaturedServer?.address && (
-            <ActionButton
-              icon="solar:star-bold"
-              label="PIXEL PLAY"
-              variant="secondary"
-              size="sm"
-              tooltip={`Unirse rapido a ${primaryFeaturedServer.address}`}
-              onClick={() =>
-                handleQuickPlayLaunch(undefined, primaryFeaturedServer.address || undefined)
-              }
-              disabled={isLaunching}
-            />
-          )}
+
           <ActionButton
             icon={loading ? "solar:refresh-circle-bold-duotone" : "solar:refresh-bold"}
             label="ACTUALIZAR"

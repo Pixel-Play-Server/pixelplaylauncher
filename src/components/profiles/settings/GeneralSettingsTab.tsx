@@ -72,7 +72,7 @@ export function GeneralSettingsTab({
       <div ref={formRef} className="space-y-6">
         <div className="flex gap-6">
           <div className="flex-1 flex flex-col">
-            <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
+            <label className="block text-3xl font-minecraft text-white mb-2 normal-case">
               {t("profile.profileName")}
             </label>
             <div className="flex items-center gap-4">
@@ -103,7 +103,7 @@ export function GeneralSettingsTab({
           </div>
 
           <div className="flex-1 flex flex-col">
-            <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
+            <label className="block text-3xl font-minecraft text-white mb-2 normal-case">
               {t("profile.group")}
             </label>
             <div className="flex items-center">
@@ -139,7 +139,7 @@ export function GeneralSettingsTab({
         </div>
 
         <div>
-          <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
+          <label className="block text-3xl font-minecraft text-white mb-2 normal-case">
             {t("profile.quickPlayPath")}
           </label>
           <SearchStyleInput
@@ -161,7 +161,7 @@ export function GeneralSettingsTab({
         </div>
 
         <div>
-          <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
+          <label className="block text-3xl font-minecraft text-white mb-2 normal-case">
             {t("settings.preLaunchHook")}
           </label>
           <SearchStyleInput
@@ -187,7 +187,7 @@ export function GeneralSettingsTab({
         </div>
 
         <div>
-          <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
+          <label className="block text-3xl font-minecraft text-white mb-2 normal-case">
             {t("settings.wrapperHook")}
           </label>
           <SearchStyleInput
@@ -213,7 +213,7 @@ export function GeneralSettingsTab({
         </div>
 
         <div>
-          <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
+          <label className="block text-3xl font-minecraft text-white mb-2 normal-case">
             {t("settings.postExitHook")}
           </label>
           <SearchStyleInput

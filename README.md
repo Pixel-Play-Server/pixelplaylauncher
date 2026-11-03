@@ -1,58 +1,37 @@
-# Pixel Play Launcher
+# Pixel Play 7.0
 
-PixelPlay Launcher is a modern Minecraft launcher forked from LiquidLauncher and NoRiskClient Launcher. This project is licensed under the GNU General Public License v3.0 (GPLv3).
+Un launcher para tener tus perfiles, mods y amigos en un mismo lugar, con una interfaz de estilo Minecraft.
 
-## About This Fork
-- **Origin:** Forked from [LiquidLauncher](https://github.com/liquidlauncher/liquidlauncher) and NoRiskClient Launcher.
-- **License:** This project and all modifications are licensed under GPLv3. See the LICENSE file for details.
-- **Branding:** All previous NoRisk and LiquidLauncher branding has been replaced with PixelPlay branding.
+**[Descargar Pixel Play](https://launcher.pixelplay.gg)** · **[Código del frontend](https://github.com/Pixel-Play-Server/pixelplaylauncher)** · **[Backend Go/Wails](https://github.com/Pixel-Play-Server/pixelplay-wails)**
 
-## Features
-- Multi-platform support: Windows, Linux, macOS (Intel & ARM)
-- Modern UI with React and Tauri
-- Automatic updates via Cloudflare R2
-- Installer builds for all major platforms
+## Qué trae 7.0
 
-## Build Instructions
-[![Build and Upload to R2 (Windows)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-windows.yml/badge.svg)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-windows.yml)
+- Navegación con secciones visibles, controles de cuenta compactos y la misma estética pixelada en todo el launcher.
+- Perfiles y gestión de contenido desde Modrinth y CurseForge.
+- Horizon 26.3 integrado en el flujo de perfiles de Pixel Play para Linux y Windows x86_64.
+- Catálogo de [playhorizon.dev/mods](https://playhorizon.dev/mods): mods WebAssembly `.hmod`, consulta de proyectos nativos `.hnmod` y descarga verificada de resource packs.
+- Cuentas más ordenadas y correcciones en mensajes, confirmaciones de envío y notificaciones de amigos.
+- Capas oficiales de Minecraft de tu cuenta Microsoft; sin catálogo de capas personalizadas.
+- Sin anuncios de hosting ni servidores patrocinados preconfigurados.
 
-[![Build and Upload to R2 (macOS Intel)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-macos-intel.yml/badge.svg)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-macos-intel.yml)
+### Horizon: compatibilidad del contenido
 
-[![Build and Upload to R2 (macOS ARM)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-macos-arm.yml/badge.svg)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-macos-arm.yml)
+Los mods `.hmod` se instalan y activan desde Pixel Play. Los resource packs se guardan en la carpeta del perfil y se seleccionan dentro del juego. Las descargas del catálogo verifican SHA-256 y tamaño y respetan las revocaciones del registro.
 
-[![Build and Upload to R2 (Linux)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-linux.yml/badge.svg)](https://github.com/Pixel-Play-Server/pixelplaylauncher/actions/workflows/build-and-upload-r2-linux.yml)
+Los proyectos `.hnmod` contienen código Rust que requiere compilar una versión de Horizon con sus mixins. Se muestran con esta advertencia; **el compilador nativo todavía no está integrado**, por lo que Pixel Play no los presenta como instalados ni ejecutables. Un mod Java `.jar` no se convierte en un mod Horizon.
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or newer recommended)
-- [Yarn](https://yarnpkg.com/) (v1.x)
-- [Rust](https://rustup.rs/) (stable toolchain)
-- [Tauri CLI](https://tauri.app/v1/guides/getting-started/prerequisites/)
-- On Linux: `libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf build-essential`
+Horizon y Minecraft requieren sus propios recursos y condiciones de uso. Pixel Play no incluye archivos del juego ni concede acceso a servicios o servidores que requieran una cuenta autenticada.
 
-### Steps
-1. **Install dependencies:**
-   ```sh
-   yarn install --frozen-lockfile
-   ```
-2. **Build the frontend:**
-   ```sh
-   yarn build
-   ```
-3. **Build the Tauri app (installer):**
-   ```sh
-   yarn tauri build
-   ```
-   - For a specific platform (e.g., Windows):
-     ```sh
-     yarn tauri build --target windows
-     ```
+## Desarrollo
 
-### Output
-- The installer or app bundle will be in `src-tauri/target/release/bundle/` for your platform.
+La versión de escritorio 7.0 utiliza **Go + Wails + React/TypeScript**. El árbol `src-tauri` del repositorio frontend conserva la implementación anterior; no es el proceso de compilación de esta versión.
 
-## License
-This project is licensed under the GNU GPL v3. See [LICENSE](LICENSE).
+Consulta las instrucciones del [backend](https://github.com/Pixel-Play-Server/pixelplay-wails/tree/main/pixelplay-launcher). Las distribuciones de esta versión son Linux y Windows x86_64; no se anuncia un nuevo binario macOS sin una compilación verificada.
 
-## Credits
-- Forked from [LiquidLauncher](https://github.com/liquidlauncher/liquidlauncher) and NoRiskClient Launcher.
-- PixelPlay Team and contributors.
+## Créditos y licencia
+
+La interfaz deriva de [NoRiskClient Launcher](https://github.com/NoRiskClient/noriskclient-launcher) y [LiquidLauncher](https://github.com/liquidlauncher/liquidlauncher). Pixel Play mantiene su propia integración y diseño sobre esa base. El frontend se distribuye bajo **GNU GPL v3**; consulta su [LICENSE](https://github.com/Pixel-Play-Server/pixelplaylauncher/blob/main/LICENSE).
+
+Horizon es un proyecto independiente de [horizon-rust](https://github.com/horizon-rust/horizon). Los mods, bibliotecas y demás proyectos conservan sus respectivas licencias. Las integraciones privadas de Lunar no forman parte de esta distribución pública.
+
+No es un producto oficial de Minecraft, Mojang ni Microsoft.

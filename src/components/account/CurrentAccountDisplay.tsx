@@ -117,10 +117,10 @@ export function CurrentAccountDisplay({
             "shadow-[0_8px_0_rgba(0,0,0,0.3),0_10px_15px_rgba(0,0,0,0.35)]",
           "cursor-pointer",
           getHoverTransform(),
-          variant !== "flat" && `hover:shadow-[${getHoverBoxShadow()}]`,
+
           "hover:brightness-110",
           getActiveTransform(),
-          variant !== "flat" && `active:shadow-[${getActiveBoxShadow()}]`,
+
           "active:brightness-90",
           className,
         )}
@@ -149,7 +149,8 @@ export function CurrentAccountDisplay({
         <span className="absolute inset-0 opacity-0 hover:opacity-30 transition-opacity duration-300 bg-gradient-radial from-white/30 via-transparent to-transparent" />
 
         <div
-          className="relative w-7 h-7 overflow-hidden border-2 rounded-sm flex-shrink-0 flex items-center justify-center"
+          className="relative w-6 h-6 border rounded-sm flex-shrink-0 flex items-center justify-center"
+        title={t("accounts.addAccount")}
           style={{
             borderColor: `${accentColor.value}60`,
             backgroundColor: `${accentColor.value}20`,
@@ -159,7 +160,7 @@ export function CurrentAccountDisplay({
         </div>
 
         <div className="flex items-center gap-1 min-w-0">
-          <span className="text-xl text-white font-minecraft lowercase">
+          <span className="text-xl text-white font-minecraft normal-case">
             {t("accounts.addAccount")}
           </span>
         </div>
@@ -191,18 +192,19 @@ export function CurrentAccountDisplay({
       className={cn(
         "font-minecraft relative overflow-visible backdrop-blur-md transition-all duration-200",
         "rounded-md text-white tracking-wider",
-        "flex items-center gap-3 px-3 py-1.5",
+        "flex items-center gap-2 px-3 h-10",
         "text-shadow-sm",
         getBorderClasses(),
         variant !== "flat" &&
           "shadow-[0_8px_0_rgba(0,0,0,0.3),0_10px_15px_rgba(0,0,0,0.35)]",
         "cursor-pointer",
         getHoverTransform(),
-        variant !== "flat" && `hover:shadow-[${getHoverBoxShadow()}]`,
+
         "hover:brightness-110",
         getActiveTransform(),
-        variant !== "flat" && `active:shadow-[${getActiveBoxShadow()}]`,
+
         "active:brightness-90",
+        "max-w-[260px]",
         className,
       )}
       onClick={onClick}
@@ -232,7 +234,8 @@ export function CurrentAccountDisplay({
       <span className="absolute inset-0 opacity-0 hover:opacity-30 transition-opacity duration-300 bg-gradient-radial from-white/30 via-transparent to-transparent" />
 
       <div
-        className="relative w-7 h-7 overflow-hidden border-2 rounded-sm flex-shrink-0 flex items-center justify-center"
+        className="relative w-6 h-6 border rounded-sm flex-shrink-0 flex items-center justify-center"
+        title={status ? t(`friends.status.${status.key}`) : username}
         style={{
           borderColor: `${accentColor.value}90`,
           backgroundColor: `${accentColor.value}20`,
@@ -240,7 +243,7 @@ export function CurrentAccountDisplay({
       >
         <PlayerHeadshot
           playerName={username}
-          size={28}
+          size={24}
           alt={t("accounts.avatarAlt", { name: username })}
         />
         {status && (
@@ -252,10 +255,10 @@ export function CurrentAccountDisplay({
       </div>
 
       {!compact && (
-        <div className="flex flex-col justify-center min-w-0 gap-0.5">
+        <div className="flex flex-1 items-center min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             <span
-              className="text-xl text-white font-minecraft uppercase truncate leading-none"
+              className="text-sm text-white font-minecraft-ten truncate leading-tight"
               title={username}
             >
               {username}
@@ -265,16 +268,10 @@ export function CurrentAccountDisplay({
               pixelAccount={activeAccount.pixel_account}
               rankLabel={activeAccount.rank_label}
               rankColor={activeAccount.rank_color}
+              className="!px-1 !py-0.5 !text-[10px]"
             />
           </div>
-          {status && (
-            <span
-              className="text-[10px] font-minecraft-ten uppercase tracking-wide leading-none"
-              style={{ color: status.color }}
-            >
-              {t(`friends.status.${status.key}`)}
-            </span>
-          )}
+
         </div>
       )}
 

@@ -97,7 +97,7 @@ export function WindowSettingsTab({
   return (
     <div ref={tabRef} className="space-y-6 select-none">
       <div>
-        <h3 className="text-3xl font-minecraft text-white mb-2 lowercase">
+        <h3 className="text-3xl font-minecraft text-white mb-2 normal-case">
           {t("profile.windowSettings")}
         </h3>
         <p className="text-xs text-white/70 mb-4 font-minecraft-ten tracking-wide select-none">
@@ -107,12 +107,12 @@ export function WindowSettingsTab({
 
       <div ref={resolutionRef} className="space-y-4">
         <div>
-          <h3 className="text-3xl font-minecraft text-white mb-3 lowercase">
+          <h3 className="text-3xl font-minecraft text-white mb-3 normal-case">
             {t("profile.resolution")}
           </h3>
           <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-xl text-white/70 font-minecraft mb-2 lowercase tracking-wide select-none">
+                <label className="block text-xl text-white/70 font-minecraft mb-2 normal-case tracking-wide select-none">
                   {t("profile.width")}
                 </label>
                 <SearchStyleInput
@@ -131,7 +131,7 @@ export function WindowSettingsTab({
                 />
               </div>
               <div>
-                <label className="block text-xl text-white/70 font-minecraft mb-2 lowercase tracking-wide select-none">
+                <label className="block text-xl text-white/70 font-minecraft mb-2 normal-case tracking-wide select-none">
                   {t("profile.height")}
                 </label>
                 <SearchStyleInput

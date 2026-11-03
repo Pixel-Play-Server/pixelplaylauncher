@@ -108,7 +108,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
             rows={rows}            className={cn(
               "w-full h-full bg-transparent outline-none",
               "text-white placeholder-white placeholder-opacity-50",
-              "font-minecraft lowercase p-4 text-xl",
+              "font-minecraft normal-case p-4 text-xl",
               "focus:outline-none",
               resizeClasses[resize],
             )}onFocus={handleFocus}
@@ -126,7 +126,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
           <div
             id={`${props.id || "textarea"}-description`}
             className={cn(
-              "mt-2 text-sm lowercase",
+              "mt-2 text-sm normal-case",
               error ? "text-red-400" : "text-white text-opacity-70"
             )}
             role={error ? "alert" : "region"}

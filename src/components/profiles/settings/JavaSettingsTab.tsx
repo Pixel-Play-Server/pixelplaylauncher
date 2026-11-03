@@ -363,7 +363,7 @@ export function JavaSettingsTab({
     <div ref={tabRef} className="space-y-6 select-none">
       <div ref={memoryRef} className="space-y-4">
         <div>
-          <h3 className="text-3xl font-minecraft text-white mb-3 lowercase">
+          <h3 className="text-3xl font-minecraft text-white mb-3 normal-case">
             {editedProfile.is_standard_version ? t("profile.globalMemoryAllocated") : t("profile.memoryAllocated")}
           </h3>
           <Card
@@ -421,11 +421,11 @@ export function JavaSettingsTab({
 
           {!useCustomJava && (
             <div className="mt-3">
-              <div className="text-2xl text-white font-minecraft mb-2 lowercase tracking-wide select-none">
+              <div className="text-2xl text-white font-minecraft mb-2 normal-case tracking-wide select-none">
                 {t("profile.usingDefaultJava")}
               </div>
               {/* Consider fetching and displaying the actual default path if available */}
-              <div className="text-xs text-white/70 font-minecraft-ten break-all lowercase tracking-wide select-none">
+              <div className="text-xs text-white/70 font-minecraft-ten break-all normal-case tracking-wide select-none">
                 {t("profile.defaultJavaDescription")}
               </div>
             </div>

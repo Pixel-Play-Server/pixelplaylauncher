@@ -131,11 +131,11 @@ export function ProfileImport({
             </p>
 
             <div className="mb-6">
-              <h3 className="text-2xl text-white font-minecraft mb-4 select-none lowercase">
+              <h3 className="text-2xl text-white font-minecraft mb-4 select-none normal-case">
                 supported formats:
               </h3>
               <ul
-                className="text-2xl text-white/80 space-y-4 select-none lowercase font-minecraft"
+                className="text-2xl text-white/80 space-y-4 select-none normal-case font-minecraft"
                 ref={formatItemsRef}
               >
                 <li className="flex items-center">

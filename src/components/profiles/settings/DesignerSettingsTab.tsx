@@ -30,7 +30,7 @@ export function DesignerSettingsTab({
   return (
     <div className="space-y-4 pt-2">
       <div>
-        <h3 className="text-3xl font-minecraft text-white mb-3 lowercase">
+        <h3 className="text-3xl font-minecraft text-white mb-3 normal-case">
           {t("profile.assetManagement")}
         </h3>
         <div className="p-0">

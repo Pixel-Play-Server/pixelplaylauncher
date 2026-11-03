@@ -53,7 +53,7 @@ export function CustomDropdown({
     <div className={`relative ${className}`} ref={dropdownRef}>
       {/* Label above (only if provided) */}
       {label && (
-        <label className="block text-white font-minecraft text-3xl lowercase mb-2">
+        <label className="block text-white font-minecraft text-3xl normal-case mb-2">
           {label}
         </label>
       )}

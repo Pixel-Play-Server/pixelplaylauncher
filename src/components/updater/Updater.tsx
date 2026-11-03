@@ -247,7 +247,7 @@ export default function Updater() {
               alt="Pixel Play Launcher Logo"
               className="w-32 h-32 object-contain mb-1"
             />
-            <p className="text-lg font-minecraft text-white/70 lowercase">
+            <p className="text-lg font-minecraft text-white/70 normal-case">
               Updater
             </p>
           </div>

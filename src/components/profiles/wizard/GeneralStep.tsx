@@ -116,7 +116,7 @@ export function GeneralStep({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-3xl font-minecraft text-white mb-3 lowercase">
+        <h2 className="text-3xl font-minecraft text-white mb-3 normal-case">
           profile details
         </h2>
         <p className="text-xs text-white/70 font-minecraft-ten tracking-wide">
@@ -130,7 +130,7 @@ export function GeneralStep({
         className="p-6 space-y-6 bg-black/20 border border-white/10"
       >
         <div>
-          <label className="block text-2xl font-minecraft text-white mb-2 lowercase">
+          <label className="block text-2xl font-minecraft text-white mb-2 normal-case">
             profile name <span className="text-red-400">*</span>
           </label>
           <Input
@@ -143,7 +143,7 @@ export function GeneralStep({
         </div>
 
         <div>
-          <label className="block text-2xl font-minecraft text-white mb-2 lowercase">
+          <label className="block text-2xl font-minecraft text-white mb-2 normal-case">
             group
           </label>
           <Input
@@ -161,7 +161,7 @@ export function GeneralStep({
         className="p-6 space-y-6 bg-black/20 border border-white/10"
       >
         <div>
-          <label className="block text-2xl font-minecraft text-white mb-2 lowercase">
+          <label className="block text-2xl font-minecraft text-white mb-2 normal-case">
             maximum ram: {memoryMaxMb} mb ({(memoryMaxMb / 1024).toFixed(1)} gb)
           </label>
           <RangeSlider

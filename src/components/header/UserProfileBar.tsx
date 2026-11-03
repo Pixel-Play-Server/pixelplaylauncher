@@ -56,6 +56,7 @@ export function UserProfileBar({ className }: UserProfileBarProps) {
   const { showModal, hideModal } = useGlobalModal();
 
   const openAddAccountModal = () => {
+    handleCloseDropdown();
     showModal(
       "add-account",
       <AccountAddChoiceModal
@@ -97,7 +98,7 @@ export function UserProfileBar({ className }: UserProfileBarProps) {
         <div ref={profileButtonRef}>
           <CurrentAccountDisplay
             onClick={toggleAccountDropdown}
-            className="min-h-[52px]"
+            className="h-10 min-h-0"
           />
         </div>
 
@@ -118,7 +119,7 @@ export function UserProfileBar({ className }: UserProfileBarProps) {
         isOpen={isAccountDropdownOpen}
         onClose={handleCloseDropdown}
         triggerRef={profileButtonRef}
-        width={300}
+        width={340}
       >
   <MinecraftAccountManager onClose={handleCloseDropdown} isInDropdown onRequestAddAccount={openAddAccountModal} />
       </Dropdown>

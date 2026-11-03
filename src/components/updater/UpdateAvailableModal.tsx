@@ -93,7 +93,7 @@ export function UpdateAvailableModal({ info, onClose }: Props) {
               <Icon icon="solar:download-bold" className="w-7 h-7 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-white font-minecraft text-3xl lowercase leading-none">
+              <h2 className="text-white font-minecraft text-3xl normal-case leading-none">
                 Actualización
               </h2>
               <p className="text-white/70 text-sm mt-2 font-minecraft-ten">

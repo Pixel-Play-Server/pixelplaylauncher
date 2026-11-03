@@ -144,7 +144,7 @@ export function NRCTab({
         {/* pixelplay Pack Selection */}
         <div className="space-y-3">
           <div className="space-y-2">
-            <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
+            <label className="block text-3xl font-minecraft text-white mb-2 normal-case">
               info
             </label>
             <p className="text-sm text-white/60 font-minecraft-ten">
@@ -234,7 +234,7 @@ export function NRCTab({
 
         {/* Repair Profile Section */}
         <div className="space-y-3">
-          <label className="block text-3xl font-minecraft text-white mb-2 lowercase">
+          <label className="block text-3xl font-minecraft text-white mb-2 normal-case">
             repair profile
           </label>
           <div className="flex flex-col space-y-2 max-w-xs">

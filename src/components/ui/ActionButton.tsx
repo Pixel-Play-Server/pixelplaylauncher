@@ -83,8 +83,8 @@ export function ActionButton({
 
   const getButtonStyles = () => {
     const baseClasses = (effectiveVariant === "text" || effectiveVariant === "highlight")
-      ? `transition-all duration-200 font-minecraft lowercase flex items-center gap-2 ${getSizeClasses()}`
-      : `transition-all duration-200 hover:scale-105 border font-minecraft lowercase rounded-lg flex items-center gap-2 ${getSizeClasses()}`;
+      ? `transition-all duration-200 font-minecraft normal-case flex items-center gap-2 ${getSizeClasses()}`
+      : `transition-all duration-200 hover:scale-105 border font-minecraft normal-case rounded-lg flex items-center gap-2 ${getSizeClasses()}`;
     
     switch (effectiveVariant) {
       case "primary":

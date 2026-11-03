@@ -190,7 +190,7 @@ export function LogViewerDisplay({
               style={{ borderTopColor: accentColor.value }}
             ></div>
           </div>
-          <div className="font-minecraft text-xl text-white/80 tracking-wide lowercase">
+          <div className="font-minecraft text-xl text-white/80 tracking-wide normal-case">
             Loading logs...
           </div>
         </div>
@@ -227,10 +227,10 @@ export function LogViewerDisplay({
             icon="solar:file-text-bold"
             className="w-12 h-12 text-white/30 mx-auto mb-3"
           />
-          <p className="text-white/60 font-minecraft text-xl tracking-wide lowercase select-none">
+          <p className="text-white/60 font-minecraft text-xl tracking-wide normal-case select-none">
             No log content available
           </p>
-          <p className="text-white/40 font-minecraft text-sm mt-2 tracking-wide lowercase select-none">
+          <p className="text-white/40 font-minecraft text-sm mt-2 tracking-wide normal-case select-none">
             Select a log file to view
           </p>
         </div>
@@ -379,7 +379,7 @@ export function LogViewerDisplay({
                     icon="solar:filter-bold"
                     className="w-12 h-12 text-white/30 mx-auto mb-3"
                   />
-                  <p className="text-white/60 font-minecraft text-xl tracking-wide lowercase select-none">
+                  <p className="text-white/60 font-minecraft text-xl tracking-wide normal-case select-none">
                     No log lines match the current filters
                   </p>
                 </div>
@@ -534,25 +534,7 @@ export function LogViewerDisplay({
         </div>
       </div>
 
-      {/* Non-intrusive Ethical Ads / Partner Sponsor Banner */}
-      <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between px-3 py-1.5 rounded-md bg-black/40 text-xs font-minecraft-ten text-white/60">
-        <div className="flex items-center gap-2">
-          <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] px-1.5 py-0.5 rounded font-minecraft">
-            ANUNCIO
-          </span>
-          <span>
-            ⚡ <strong className="text-white/90">Pixel Cloud Hosting</strong> — Servidores de alto rendimiento optimizados para NeoForge. Pago seguro vía PayPal.
-          </span>
-        </div>
-        <a
-          href="https://panel.pixelplay.gg"
-          target="_blank"
-          rel="noreferrer"
-          className="text-emerald-400 hover:text-emerald-300 underline font-minecraft text-xs ml-4 whitespace-nowrap"
-        >
-          Saber más &rarr;
-        </a>
-      </div>
+
     </div>
   );
 }

@@ -96,7 +96,7 @@ export function WizardSidebar({
               icon="solar:magic-stick-bold"
               className="w-5 h-5 text-white"
             />
-            <span className="text-xl font-minecraft text-white lowercase">
+            <span className="text-xl font-minecraft text-white normal-case">
               profile creation
             </span>
           </div>
@@ -148,7 +148,7 @@ export function WizardSidebar({
                         />
                       )}
                     </div>
-                    <span className="font-minecraft text-3xl lowercase">
+                    <span className="font-minecraft text-3xl normal-case">
                       {stepTitles[index]}
                     </span>
                   </div>

@@ -97,7 +97,7 @@ export function VersionStep({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-3xl font-minecraft text-white mb-3 lowercase">
+        <h2 className="text-3xl font-minecraft text-white mb-3 normal-case">
           minecraft version
         </h2>
         <p className="text-xs text-white/70 font-minecraft-ten tracking-wide">
@@ -130,7 +130,7 @@ export function VersionStep({
             <Icon icon="solar:widget-bold" className="w-7 h-7 text-white" />
           </div>
           <div>
-            <div className="text-2xl text-white font-minecraft tracking-wide lowercase">
+            <div className="text-2xl text-white font-minecraft tracking-wide normal-case">
               selected: minecraft {profile.game_version}
             </div>
             <div className="text-xs text-white/70 tracking-wide font-minecraft-ten">

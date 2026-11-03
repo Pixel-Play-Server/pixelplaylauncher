@@ -448,7 +448,9 @@ export function LocalContentTabV2<T extends LocalContentItem>({
     switch (currentContentType) {
       case "Mod":
         dialogFilters = [
-          { name: "Java Archives", extensions: ["jar", "jar.disabled"] },
+          profile.loader === "horizon"
+            ? { name: "Mods", extensions: ["hmod"] }
+            : { name: "Java Archives", extensions: ["jar", "jar.disabled"] },
         ];
         break;
       case "ResourcePack":

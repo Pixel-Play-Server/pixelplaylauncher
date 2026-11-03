@@ -417,7 +417,7 @@ export function InstallationSettingsTab({
         <div>
           <div className="flex items-start justify-between gap-6">
             <div className="flex-1">
-              <h3 className="text-3xl font-minecraft text-white mb-3 lowercase">
+              <h3 className="text-3xl font-minecraft text-white mb-3 normal-case">
                 currently installed
               </h3>
               <div className="flex items-center gap-3 text-sm font-minecraft-ten">
@@ -463,7 +463,7 @@ export function InstallationSettingsTab({
 
       <div ref={versionsRef} className="space-y-4">
         <div>
-          <h3 className="text-3xl font-minecraft text-white mb-3 lowercase">
+          <h3 className="text-3xl font-minecraft text-white mb-3 normal-case">
             game version
           </h3>
           <div className="mb-3">
@@ -547,7 +547,7 @@ export function InstallationSettingsTab({
 
       <div ref={platformsRef} className="space-y-4">
         <div>
-          <h3 className="text-3xl font-minecraft text-white mb-3 lowercase">
+          <h3 className="text-3xl font-minecraft text-white mb-3 normal-case">
             platform
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
@@ -584,7 +584,7 @@ export function InstallationSettingsTab({
                     className="w-10 h-10 mb-2 object-contain"
                     style={{ opacity: isCompatible ? 1 : 0.5 }}
                   />
-                  <span className="font-minecraft text-xl lowercase">
+                  <span className="font-minecraft text-xl normal-case">
                     {loader.name}
                   </span>
                   {!isCompatible && (
@@ -600,7 +600,7 @@ export function InstallationSettingsTab({
 
         {editedProfile.loader !== "vanilla" && (
           <div ref={loaderVersionRef}>
-            <h3 className="text-3xl font-minecraft text-white mb-3 lowercase">{`${editedProfile.loader} version`}</h3>
+            <h3 className="text-3xl font-minecraft text-white mb-3 normal-case">{`${editedProfile.loader} version`}</h3>
             
             {resolvedLoaderVersion && (
               <Card

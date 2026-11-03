@@ -72,7 +72,7 @@ export function PackUpdateModal({ info, onClose }: Props) {
           <button
             type="button"
             onClick={onClose}
-            className="w-full border-2 px-4 py-2 font-minecraft text-xl lowercase text-white"
+            className="w-full border-2 px-4 py-2 font-minecraft text-xl normal-case text-white"
             style={{ borderColor: accent.value, backgroundColor: `${accent.value}40` }}
           >
             {done || failed ? "listo" : "ocultar"}

@@ -548,7 +548,7 @@ export function SettingsTab() {
                   className="block w-full h-2 mb-2"
                   style={{ backgroundColor: color?.value }}
                 />
-                <span className="font-minecraft text-xl text-white lowercase leading-none">
+                <span className="font-minecraft text-xl text-white normal-case leading-none">
                   {preset.name}
                 </span>
               </button>
@@ -628,7 +628,7 @@ export function SettingsTab() {
           <div className="flex items-center gap-2 mb-2">
             <Icon icon="solar:folder-bold" className="w-6 h-6 text-white" />
             <SimpleTooltip content={t("tooltips.gameDataDirectory")}>
-              <h3 className="text-3xl font-minecraft text-white lowercase cursor-help">
+              <h3 className="text-3xl font-minecraft text-white normal-case cursor-help">
                 {t("settings.gameDataDirectory")}
               </h3>
             </SimpleTooltip>
@@ -699,7 +699,7 @@ export function SettingsTab() {
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
               <Icon icon="solar:code-bold" className="w-6 h-6 text-white" />
-              <h3 className="text-3xl font-minecraft text-white lowercase">
+              <h3 className="text-3xl font-minecraft text-white normal-case">
                 {t("settings.gameHooks")}
               </h3>
             </div>
@@ -728,7 +728,7 @@ export function SettingsTab() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Icon icon="solar:play-circle-bold" className="w-5 h-5 text-white" />
-                  <h5 className="font-minecraft text-2xl lowercase text-white">{t("settings.preLaunchHook")}</h5>
+                  <h5 className="font-minecraft text-2xl normal-case text-white">{t("settings.preLaunchHook")}</h5>
                 </div>
                 <Button
                   variant={isPreLaunchEditEnabled ? "secondary" : "ghost"}
@@ -789,7 +789,7 @@ export function SettingsTab() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Icon icon="solar:shield-bold" className="w-5 h-5 text-white" />
-                  <h5 className="font-minecraft text-2xl lowercase text-white">{t("settings.wrapperHook")}</h5>
+                  <h5 className="font-minecraft text-2xl normal-case text-white">{t("settings.wrapperHook")}</h5>
                 </div>
                 <Button
                   variant={isWrapperEditEnabled ? "secondary" : "ghost"}
@@ -850,7 +850,7 @@ export function SettingsTab() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Icon icon="solar:stop-circle-bold" className="w-5 h-5 text-white" />
-                  <h5 className="font-minecraft text-2xl lowercase text-white">{t("settings.postExitHook")}</h5>
+                  <h5 className="font-minecraft text-2xl normal-case text-white">{t("settings.postExitHook")}</h5>
                 </div>
                 <Button
                   variant={isPostExitEditEnabled ? "secondary" : "ghost"}
@@ -911,7 +911,7 @@ export function SettingsTab() {
               <div className="flex items-start gap-3">
                 <Icon icon="solar:danger-triangle-bold" className="w-6 h-6 text-orange-400 flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="text-xl font-minecraft text-orange-300 mb-2 lowercase">
+                  <h4 className="text-xl font-minecraft text-orange-300 mb-2 normal-case">
                     {t("settings.warning")}
                   </h4>
                   <p className="text-sm text-orange-200/80 font-minecraft-ten">
@@ -925,7 +925,7 @@ export function SettingsTab() {
               <div className="flex items-start gap-3">
                 <Icon icon="solar:info-circle-bold" className="w-6 h-6 text-emerald-400 flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="text-xl font-minecraft text-emerald-300 mb-2 lowercase">
+                  <h4 className="text-xl font-minecraft text-emerald-300 mb-2 normal-case">
                     {t("settings.examples")}
                   </h4>
                   <div className="space-y-2 text-sm text-emerald-200/80 font-minecraft-ten">
@@ -945,7 +945,7 @@ export function SettingsTab() {
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
               <Icon icon="solar:document-text-bold" className="w-6 h-6 text-white" />
-              <h3 className="text-3xl font-minecraft text-white lowercase">
+              <h3 className="text-3xl font-minecraft text-white normal-case">
                 {t("settings.thirdPartyLicenses")}
               </h3>
             </div>

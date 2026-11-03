@@ -196,7 +196,7 @@ export function ExportSettingsTab({
     <div ref={contentRef} className="space-y-6">
       {!isInModalContext && (
         <div>
-          <h3 className="text-3xl font-minecraft text-white mb-1 lowercase">
+          <h3 className="text-3xl font-minecraft text-white mb-1 normal-case">
             Export Profile
           </h3>
           <p className="text-xs text-white/70 mb-4 font-minecraft-ten tracking-wide">
@@ -212,7 +212,7 @@ export function ExportSettingsTab({
         <div className="space-y-1">
           <label
             htmlFor="exportFilename"
-            className="block text-2xl text-white font-minecraft mb-2 lowercase"
+            className="block text-2xl text-white font-minecraft mb-2 normal-case"
           >
             Export Filename
           </label>
@@ -231,7 +231,7 @@ export function ExportSettingsTab({
         </div>
         {/* File selection section */}
         <div>
-          <h4 className="text-2xl font-minecraft text-white lowercase mb-1">
+          <h4 className="text-2xl font-minecraft text-white normal-case mb-1">
             Select Files & Folders (Optional)
           </h4>
           <p className="text-xs text-white/70 mb-3 font-minecraft-ten tracking-wide">

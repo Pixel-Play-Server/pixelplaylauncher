@@ -37,6 +37,7 @@ import { useGlobalDragAndDrop } from './hooks/useGlobalDragAndDrop';
 import { loadIcons } from '@iconify/react';
 import './lib/i18n'; // Initialize i18n
 import { useTranslation } from 'react-i18next';
+import { useSocialPoll } from "./hooks/useSocialPoll";
 import { usePixelPresence } from "./hooks/usePixelPresence";
 import { useRankWatch } from "./hooks/useRankWatch";
 const RankUpgradeOverlay = lazy(() =>
@@ -63,6 +64,7 @@ export function App() {
   const { hasAcceptedTermsOfService } = useThemeStore();
   const { i18n } = useTranslation();
   usePixelPresence();
+  useSocialPoll();
   useRankWatch();
   useEffect(() => {
     void refreshRankCatalog(true);

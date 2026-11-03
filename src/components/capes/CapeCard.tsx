@@ -111,7 +111,7 @@ export function CapeCard({
           />
         </div>
         <p
-          className="font-minecraft text-white lowercase truncate text-3xl transition-transform duration-300 ease-out group-hover:scale-110"
+          className="font-minecraft text-white normal-case truncate text-3xl transition-transform duration-300 ease-out group-hover:scale-110"
           title={creatorName ? `By ${creatorName}` : capeHash}
         >
           {creatorName ? creatorName : "Unknown"}
@@ -142,7 +142,7 @@ export function CapeCard({
         </div>
 
         <div className="flex items-center justify-between mt-auto">
-          <p className="text-white/60 font-minecraft lowercase text-2xl transition-transform duration-300 ease-out group-hover:scale-110">
+          <p className="text-white/60 font-minecraft normal-case text-2xl transition-transform duration-300 ease-out group-hover:scale-110">
             Uses: {uses.toLocaleString()}
           </p>
         </div>
@@ -150,7 +150,7 @@ export function CapeCard({
         {isLoading && (
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg z-20 transition-opacity duration-300 ease-in-out">
             <div className="w-20 h-20 border-4 border-t-transparent border-white rounded-full animate-spin mb-4 transition-all duration-300"></div>
-            <span className="font-minecraft text-2xl text-white lowercase animate-pulse transition-all duration-300">
+            <span className="font-minecraft text-2xl text-white normal-case animate-pulse transition-all duration-300">
               Applying...
             </span>
           </div>

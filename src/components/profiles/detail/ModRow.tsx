@@ -165,7 +165,7 @@ export function ModRow({
         </div>
 
         <div className="flex flex-col min-w-0">
-          <div className="text-white font-minecraft text-2xl py-1 lowercase tracking-wide truncate flex items-center gap-2">
+          <div className="text-white font-minecraft text-2xl py-1 normal-case tracking-wide truncate flex items-center gap-2">
             {mod.display_name || "unknown mod"}
             {hasUpdate && (
               <Button
@@ -188,7 +188,7 @@ export function ModRow({
               </Button>
             )}
           </div>
-          <div className="text-white/50 text-lg lowercase truncate">
+          <div className="text-white/50 text-lg normal-case truncate">
             {mod.source?.type === "modrinth"
               ? mod.source.project_id
               : mod.source?.type === "local"

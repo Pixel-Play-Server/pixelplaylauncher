@@ -51,6 +51,7 @@ export default function AccountAddChoiceModal({
     }
   };
 
+  const [method, setMethod] = useState<"microsoft" | "pixel" | "local">("pixel");
   const [offlineName, setOfflineName] = useState("");
   const [isSubmittingOffline, setIsSubmittingOffline] = useState(false);
   const [crackedStep, setCrackedStep] = useState<"form" | "link" | "verify">("form");
@@ -256,14 +257,15 @@ export default function AccountAddChoiceModal({
   };
 
   if (!isOpen) return null;
-  const width = modalWidth || "full";
+  const width = modalWidth === "full" ? "md" : (modalWidth || "md");
 
   const innerMaxClass = width === "sm" ? "max-w-md" : width === "md" ? "max-w-2xl" : "max-w-4xl";
-  const wrapperHeightClass = width === "full" ? "h-[90vh] flex flex-col" : "";
+  const wrapperHeightClass = "";
 
   return (
-    <Modal title={t("accounts.addAccount")} onClose={close} width={width} className={width === "full" ? "h-[90vh]" : ""}>
-      <div className={`p-6 space-y-6 ${wrapperHeightClass}`}>
+    <Modal title={t("accounts.addAccount")} onClose={close} width={width} >
+      <div className={`p-5 space-y-4 font-minecraft-ten text-sm ${wrapperHeightClass}`}>
+        {lastError && <p role="alert" className="p-3 rounded border border-red-500/30 bg-red-500/10 text-red-200 text-xs break-words">{lastError}</p>}
         {device?.user_code ? (
           <div className="flex flex-col items-center text-center gap-4 py-2">
             <p className="text-white/75 font-minecraft-ten text-sm">
@@ -280,7 +282,7 @@ export default function AccountAddChoiceModal({
               }}
               title={t("accounts.copyCode")}
             >
-              <span className="block font-minecraft text-4xl tracking-[0.35em] text-white lowercase">
+              <span className="block font-minecraft text-4xl tracking-[0.35em] text-white normal-case">
                 {device.user_code}
               </span>
               <span className="block mt-2 text-xs text-white/60 font-minecraft-ten">
@@ -306,29 +308,32 @@ export default function AccountAddChoiceModal({
           </div>
         ) : (
           <>
-            <p className="text-white/70">{t("accounts.chooseMethod")}</p>
+            <p className="text-white/55 text-xs">{t("accounts.chooseMethod")}</p>
+            <div className="grid grid-cols-3 gap-1 rounded-md bg-black/30 p-1 border border-white/10" role="tablist" aria-label={t("accounts.chooseMethod")}>
+              {(["pixel", "microsoft", "local"] as const).map(value => <button type="button" role="tab" aria-selected={method === value} key={value} disabled={msBusy || isSubmittingPixel || isSubmittingOffline} onClick={() => { setMethod(value); setLastError(null); }} className={`px-2 py-3 rounded text-xs transition-colors ${method === value ? "bg-white/10 text-white" : "text-white/45 hover:text-white"}`}>{value === "pixel" ? "Pixel" : value === "microsoft" ? "Microsoft" : "Local"}</button>)}
+            </div>
 
             <div className={`flex flex-col justify-center items-center gap-6 w-full ${innerMaxClass} mx-auto`}>
-              <Button variant="default" onClick={handleMicrosoft} className="w-full" disabled={msBusy}>
+              {method === "microsoft" && <Button variant="default" onClick={handleMicrosoft} className="w-full" disabled={msBusy}>
                 {msBusy ? t("accounts.connecting") : t("accounts.signInMicrosoft")}
-              </Button>
+              </Button>}
 
-              <div className="bg-black/55 p-4 rounded-md w-full border border-white/10">
-                <p className="text-white/70 text-sm mb-3">{t("accounts.pixelHint")}</p>
+              {method === "pixel" && <div className="w-full">
+                <p className="text-white/60 text-xs mb-4">{t("accounts.pixelHint")}</p>
                 <div className="flex flex-col gap-2">
-                  <Input value={pixelUser} onChange={(e) => setPixelUser(e.target.value)} placeholder={t("accounts.username")} />
-                  <Input type="password" value={pixelPass} onChange={(e) => setPixelPass(e.target.value)} placeholder={t("accounts.pixelPassword")} />
+                  <Input aria-label={t("accounts.username")} autoComplete="username" value={pixelUser} onChange={(e) => setPixelUser(e.target.value)} placeholder={t("accounts.username")} />
+                  <Input aria-label={t("accounts.pixelPassword")} autoComplete="current-password" type="password" value={pixelPass} onChange={(e) => setPixelPass(e.target.value)} placeholder={t("accounts.pixelPassword")} />
                   <Button variant="default" onClick={handlePixelLogin} disabled={isSubmittingPixel}>
                     {isSubmittingPixel ? t("accounts.connecting") : t("accounts.signInPixel")}
                   </Button>
                 </div>
                 <p className="text-white/45 text-xs mt-2">{t("accounts.pixelReserveHint")}</p>
-              </div>
+              </div>}
 
-              <div className="bg-black/55 p-4 rounded-md w-full border border-white/10">
+              {method === "local" && <div className="w-full">
                 {crackedStep === "link" ? (
                   <>
-                    <p className="text-white font-minecraft text-2xl lowercase mb-2">
+                    <p className="text-white font-minecraft text-2xl normal-case mb-2">
                       {t("accounts.crackedLinkTitle", { name: crackedName })}
                     </p>
                     <p className="text-white/70 text-sm mb-3">{t("accounts.crackedLinkHint", { name: crackedName })}</p>
@@ -356,7 +361,7 @@ export default function AccountAddChoiceModal({
                   </>
                 ) : crackedStep === "verify" ? (
                   <>
-                    <p className="text-white font-minecraft text-2xl lowercase mb-2">
+                    <p className="text-white font-minecraft text-2xl normal-case mb-2">
                       {t("accounts.crackedVerifyTitle")}
                     </p>
                     <p className="text-white/70 text-sm mb-3">{t("accounts.crackedVerifyHint")}</p>
@@ -389,12 +394,7 @@ export default function AccountAddChoiceModal({
                     </div>
                   </>
                 )}
-                {lastError && (
-                  <div className="mt-3 p-3 bg-red-900/50 border border-red-700 rounded-md text-sm">
-                    <div className="text-red-200 mb-2">{t("common.error")}: {lastError}</div>
-                  </div>
-                )}
-              </div>
+              </div>}
             </div>
           </>
         )}

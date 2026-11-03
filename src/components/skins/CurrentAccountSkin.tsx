@@ -145,7 +145,7 @@ export function CurrentAccountSkin({ reloadToken = 0 }: Props) {
         </div>
 
         <div className="min-w-0 flex-1 text-center sm:text-left">
-          <p className="mb-1 font-minecraft text-lg lowercase tracking-wide text-white/55">
+          <p className="mb-1 font-minecraft text-lg normal-case tracking-wide text-white/55">
             Skin actual
           </p>
           <h2 className="font-minecraft-ten text-2xl text-white sm:text-3xl">
@@ -161,7 +161,7 @@ export function CurrentAccountSkin({ reloadToken = 0 }: Props) {
               disabled={busy}
               onClick={() => void applyVariant("classic")}
               className={cn(
-                "rounded-md px-4 py-2 font-minecraft text-xl lowercase transition-all duration-200",
+                "rounded-md px-4 py-2 font-minecraft text-xl normal-case transition-all duration-200",
                 variant === "classic"
                   ? "text-white"
                   : "text-white/50 hover:text-white/80",
@@ -182,7 +182,7 @@ export function CurrentAccountSkin({ reloadToken = 0 }: Props) {
               disabled={busy}
               onClick={() => void applyVariant("slim")}
               className={cn(
-                "rounded-md px-4 py-2 font-minecraft text-xl lowercase transition-all duration-200",
+                "rounded-md px-4 py-2 font-minecraft text-xl normal-case transition-all duration-200",
                 variant === "slim"
                   ? "text-white"
                   : "text-white/50 hover:text-white/80",

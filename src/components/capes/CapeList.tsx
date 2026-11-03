@@ -256,7 +256,7 @@ function CapeItemDisplay({
                 className="w-8 h-8 animate-spin mb-1"
                 style={{ color: accentColor.value }}
               />
-              <span className="font-minecraft text-xs text-white lowercase">
+              <span className="font-minecraft text-xs text-white normal-case">
                 Equipping
               </span>
             </div>

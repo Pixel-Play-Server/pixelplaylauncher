@@ -223,7 +223,7 @@ const SkinPreview = memo(
             {isRenderLoading && canShowSpinner ? (
               <div className="flex flex-col items-center justify-center space-y-2">
                 <div className="w-8 h-8 border-4 border-t-transparent border-[var(--accent)] rounded-full animate-spin"></div>
-                <p className="font-minecraft text-xs text-white/70 lowercase">Loading...</p>
+                <p className="font-minecraft text-xs text-white/70 normal-case">Loading...</p>
               </div>
             ) : !isRenderLoading ? (
               <SkinViewer
@@ -242,7 +242,7 @@ const SkinPreview = memo(
                   className="w-8 h-8 animate-spin mb-1"
                   style={{ color: accentColor.value }}
                 />
-                <span className="font-minecraft text-xs text-white lowercase">
+                <span className="font-minecraft text-xs text-white normal-case">
                   Applying
                 </span>
               </div>
@@ -629,7 +629,7 @@ export function SkinsTab() {
   const addSkinButton = (
     <button
       onClick={() => startEditSkin(null)}
-      className="flex items-center gap-2 px-4 py-2 bg-black/30 hover:bg-black/40 text-white/70 hover:text-white border border-white/10 hover:border-white/20 rounded-lg font-minecraft text-2xl lowercase transition-all duration-200"
+      className="flex items-center gap-2 px-4 py-2 bg-black/30 hover:bg-black/40 text-white/70 hover:text-white border border-white/10 hover:border-white/20 rounded-lg font-minecraft text-2xl normal-case transition-all duration-200"
       title="Add Skin"
       disabled={!activeAccount}
     >

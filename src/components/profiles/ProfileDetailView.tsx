@@ -402,16 +402,7 @@ export function ProfileDetailView({
             className="h-px w-full mb-3"
             style={{ backgroundColor: `${accentColor.value}30` }} 
           />
-          {currentProfile.loader === "horizon" && (
-            <Button variant="secondary" size="sm" className="w-full mb-3" onClick={async () => {
-              try {
-                const file = await invoke<string>("pick_file", { title: "Instalar mod Horizon (.hmod)", filter: "*.hmod" });
-                if (!file) return;
-                const mod = await invoke<string>("install_horizon_mod", { profileId: currentProfile.id, source: file });
-                toast.success(`Mod ${mod} instalado. Actívalo desde Options > Mods en Horizon.`);
-              } catch (error) { toast.error(String(error)); }
-            }}>Instalar .hmod</Button>
-          )}
+
           <LaunchButton 
             id={profile.id} 
             name={profile.name} 

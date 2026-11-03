@@ -35,7 +35,7 @@ export function CapePagination({
       className="flex items-center justify-between px-4 py-2 mt-auto"
       variant="flat"
     >
-      <p className="font-minecraft lowercase text-sm text-white/60">
+      <p className="font-minecraft normal-case text-sm text-white/60">
         Page {currentPage + 1} / {totalPages}
         <span className="text-white/40 text-xs ml-1">({totalItems})</span>
       </p>
@@ -45,7 +45,7 @@ export function CapePagination({
           disabled={currentPage === 0}
           variant="flat-secondary"
           size="xs"
-          className="font-minecraft lowercase text-sm px-2 py-0.5"
+          className="font-minecraft normal-case text-sm px-2 py-0.5"
         >
           &lt;
         </Button>
@@ -54,7 +54,7 @@ export function CapePagination({
           disabled={currentPage >= totalPages - 1}
           variant="flat-secondary"
           size="xs"
-          className="font-minecraft lowercase text-sm px-2 py-0.5"
+          className="font-minecraft normal-case text-sm px-2 py-0.5"
         >
           &gt;
         </Button>

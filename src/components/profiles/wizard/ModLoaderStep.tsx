@@ -252,7 +252,7 @@ export function ModLoaderStep({ profile, updateProfile }: ModLoaderStepProps) {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-3xl font-minecraft text-white mb-3 lowercase">
+        <h2 className="text-3xl font-minecraft text-white mb-3 normal-case">
           mod loader
         </h2>
         <p className="text-xs text-white/70 font-minecraft-ten tracking-wide">
@@ -326,7 +326,7 @@ export function ModLoaderStep({ profile, updateProfile }: ModLoaderStepProps) {
           className="p-6 space-y-6 bg-black/20 border border-white/10"
         >
           <div>
-            <label className="block text-2xl font-minecraft text-white mb-4 lowercase">{`${profile.loader} version`}</label>
+            <label className="block text-2xl font-minecraft text-white mb-4 normal-case">{`${profile.loader} version`}</label>
             {loading ? (
               <div className="flex items-center gap-2 text-white/70">
                 <Icon
@@ -375,7 +375,7 @@ export function ModLoaderStep({ profile, updateProfile }: ModLoaderStepProps) {
             />
           </div>
           <div>
-            <div className="text-2xl text-white font-minecraft tracking-wide lowercase">
+            <div className="text-2xl text-white font-minecraft tracking-wide normal-case">
               {profile.loader} {profile.loader_version}
             </div>
             <div className="text-xs text-white/70 tracking-wide font-minecraft-ten">
@@ -452,7 +452,7 @@ function ModLoaderCard({
             (e.target as HTMLImageElement).src = "/icons/minecraft.png";
           }}
         />
-        <span className="font-minecraft text-xl lowercase">{name}</span>
+        <span className="font-minecraft text-xl normal-case">{name}</span>
       </div>
       <div className="min-h-[20px] flex items-center justify-center">
         {loading ? (

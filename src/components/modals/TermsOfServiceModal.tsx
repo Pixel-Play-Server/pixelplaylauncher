@@ -55,7 +55,7 @@ export function TermsOfServiceModal({ isOpen }: TermsOfServiceModalProps) {
     >
       <div className="p-6 space-y-6 text-white">
         <div className="text-center space-y-4">
-          <h3 className="text-3xl font-minecraft text-accent lowercase">
+          <h3 className="text-3xl font-minecraft text-accent normal-case">
             ¡Bienvenido a Pixel Play Client!
           </h3>
           <p className="text-lg font-minecraft-ten text-gray-300">

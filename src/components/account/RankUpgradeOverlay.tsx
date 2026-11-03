@@ -288,7 +288,7 @@ export function RankUpgradeOverlay({
               {t("rankUp.kicker")}
             </p>
             {info.username && (
-              <p className="font-minecraft text-4xl text-white lowercase">{info.username}</p>
+              <p className="font-minecraft text-4xl text-white normal-case">{info.username}</p>
             )}
             <div className="mt-3 flex items-center justify-center gap-3">
               <RankTag rank={info.from} pixelAccount />
@@ -321,7 +321,7 @@ export function RankUpgradeOverlay({
                 <p className="font-minecraft-ten text-xs uppercase tracking-[0.25em] text-white/55">
                   {t("rankUp.kicker")}
                 </p>
-                <h2 className="font-minecraft text-4xl text-white lowercase">
+                <h2 className="font-minecraft text-4xl text-white normal-case">
                   {t("rankUp.title", { rank: to?.label || info.to })}
                 </h2>
                 <div className="flex items-center justify-center gap-4">
@@ -353,7 +353,7 @@ export function RankUpgradeOverlay({
                 <p className="font-minecraft-ten text-xs uppercase tracking-[0.25em] text-white/55 mb-2">
                   {t("rankUp.perksTitle")}
                 </p>
-                <h2 className="font-minecraft text-4xl text-white lowercase mb-5">
+                <h2 className="font-minecraft text-4xl text-white normal-case mb-5">
                   {t("rankUp.title", { rank: to?.label || info.to })}
                 </h2>
                 <p className="font-minecraft-ten text-sm text-white/70 mb-4">{t("rankUp.subtitle")}</p>

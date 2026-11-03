@@ -139,9 +139,10 @@ export const ModrinthSearchControlsV2: React.FC<
               onSortChange={(value) => onSortOrderChange(value as UnifiedSortType)}
             />
 
+            {modSource !== ModPlatform.Horizon && (
             <button
               onClick={onToggleSidebar}
-              className="flex items-center gap-2 px-4 py-2 bg-black/30 hover:bg-black/40 text-white/70 hover:text-white border border-white/10 hover:border-white/20 rounded-lg font-minecraft text-2xl lowercase transition-all duration-200 min-h-[2.5rem]"
+              className="flex items-center gap-2 px-4 py-2 bg-black/30 hover:bg-black/40 text-white/70 hover:text-white border border-white/10 hover:border-white/20 rounded-lg font-minecraft text-2xl normal-case transition-all duration-200 min-h-[2.5rem]"
               title={isSidebarVisible ? "Hide filters" : "Show filters"}
             >
               <div className="w-4 h-8 flex items-center justify-center">
@@ -150,14 +151,20 @@ export const ModrinthSearchControlsV2: React.FC<
                 </svg>
               </div>
             </button>
+            )}
           </div>
 
           {/* Platform Selection Buttons - ganz rechts */}
           <div className="flex items-center gap-1 border border-white/10 rounded-lg p-0.5">
+            {modSource === ModPlatform.Horizon ? (
+              <span className="flex items-center gap-1.5 px-2 py-1 rounded-md font-minecraft text-2xl normal-case min-h-[2.5rem] text-white/70">
+                <Icon icon="solar:planet-bold" className="w-5 h-5" />Horizon
+              </span>
+            ) : (<>
             <button
               onClick={() => onModSourceChange(ModPlatform.Modrinth)}
               className={cn(
-                "flex items-center gap-1.5 px-2 py-1 rounded-md font-minecraft text-2xl lowercase transition-all duration-200 min-h-[2.5rem]",
+                "flex items-center gap-1.5 px-2 py-1 rounded-md font-minecraft text-2xl normal-case transition-all duration-200 min-h-[2.5rem]",
                 modSource === ModPlatform.Modrinth
                   ? "bg-green-400/40 text-white border border-green-300/30"
                   : "bg-black/30 text-white/70 hover:text-white hover:bg-black/40 border border-transparent"
@@ -175,7 +182,7 @@ export const ModrinthSearchControlsV2: React.FC<
             <button
               onClick={() => onModSourceChange(ModPlatform.CurseForge)}
               className={cn(
-                "flex items-center gap-1.5 px-2 py-1 rounded-md font-minecraft text-2xl lowercase transition-all duration-200 min-h-[2.5rem]",
+                "flex items-center gap-1.5 px-2 py-1 rounded-md font-minecraft text-2xl normal-case transition-all duration-200 min-h-[2.5rem]",
                 modSource === ModPlatform.CurseForge
                   ? "bg-orange-400/40 text-white border border-orange-300/30"
                   : "bg-black/30 text-white/70 hover:text-white hover:bg-black/40 border border-transparent"
@@ -188,12 +195,13 @@ export const ModrinthSearchControlsV2: React.FC<
                 className="w-5 h-5 object-contain"
               />
               <span className="hidden sm:inline">CurseForge</span>
-            </button>
+            </button>            </>)}
+
           </div>
         </div>
 
         {/* Filter Tags - Under Search */}
-        {totalFilters > 0 && (
+        {modSource !== ModPlatform.Horizon && totalFilters > 0 && (
           <div className="flex items-center gap-2 mt-4">
             <TagBadge
               variant="destructive"

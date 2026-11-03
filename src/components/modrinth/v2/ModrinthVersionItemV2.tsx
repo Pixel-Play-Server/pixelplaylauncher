@@ -198,7 +198,7 @@ export const ModrinthVersionItemV2 = React.memo<ModrinthVersionItemV2Props>(
         !isModpack &&
         selectedProfileId &&
         versionStatus?.is_installed &&
-        primaryFile?.hashes?.sha1 &&
+        (primaryFile?.hashes?.sha1 || version.source === "Horizon") &&
         typeof versionStatus.is_enabled === "boolean"
       ) {
         onToggleEnableClick(
@@ -206,7 +206,7 @@ export const ModrinthVersionItemV2 = React.memo<ModrinthVersionItemV2Props>(
           project,
           version,
           !versionStatus.is_enabled,
-          primaryFile.hashes.sha1,
+          primaryFile?.hashes?.sha1 || "",
         );
       } else {
         console.warn(
@@ -287,7 +287,7 @@ export const ModrinthVersionItemV2 = React.memo<ModrinthVersionItemV2Props>(
                   {version.version_number}
                 </p>
               </div>
-              <div className="flex items-center space-x-2 text-[10px] text-gray-400 font-minecraft-ten flex-shrink-0">
+              {version.source !== "Horizon" && <div className="flex items-center space-x-2 text-[10px] text-gray-400 font-minecraft-ten flex-shrink-0">
                 {" "}
                 <span className="flex items-center">
                   <Icon
@@ -301,9 +301,9 @@ export const ModrinthVersionItemV2 = React.memo<ModrinthVersionItemV2Props>(
                     icon="solar:calendar-mark-bold"
                     className="w-3 h-3 mr-0.5"
                   />
-                  {new Date(version.date_published).toLocaleDateString()}
+                  {version.date_published ? new Date(version.date_published).toLocaleDateString() : ""}
                 </span>
-              </div>
+              </div>}
             </div>
 
             <div className="flex justify-between items-center gap-2">

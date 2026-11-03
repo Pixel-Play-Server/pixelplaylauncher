@@ -520,10 +520,10 @@ export function pixelplayModsTab({
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
               <Logo size="md" className="mx-auto mb-4" />
-              <p className="text-white/60 font-minecraft text-xl tracking-wide lowercase select-none">
+              <p className="text-white/60 font-minecraft text-xl tracking-wide normal-case select-none">
                 no pixelplay pack selected
               </p>
-              <p className="text-white/40 font-minecraft text-sm mt-2 tracking-wide lowercase select-none">
+              <p className="text-white/40 font-minecraft text-sm mt-2 tracking-wide normal-case select-none">
                 select a pixelplay pack in profile settings
               </p>
             </div>
@@ -693,10 +693,10 @@ function PixelplayModRow({
         </div>
 
         <div className="flex flex-col min-w-0">
-          <div className="text-white font-minecraft text-2xl lowercase tracking-wide truncate">
+          <div className="text-white font-minecraft text-2xl normal-case tracking-wide truncate">
             {mod.display_name || mod.id}
           </div>
-          <div className="text-white/50 text-lg lowercase truncate">
+          <div className="text-white/50 text-lg normal-case truncate">
             {mod.description && <span className="mr-2">{mod.description}</span>}
             {mod.version && (
               <>

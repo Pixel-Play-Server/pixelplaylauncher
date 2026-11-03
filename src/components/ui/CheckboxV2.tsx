@@ -147,7 +147,7 @@ export function CheckboxV2({
       {label && (
         <label
           onClick={!disabled ? handleClick : undefined}
-          className={`font-minecraft lowercase text-white cursor-pointer select-none ${getLabelSize()} ${
+          className={`font-minecraft normal-case text-white cursor-pointer select-none ${getLabelSize()} ${
             disabled ? 'opacity-50 cursor-not-allowed' : 'hover:text-white/80'
           }`}
         >

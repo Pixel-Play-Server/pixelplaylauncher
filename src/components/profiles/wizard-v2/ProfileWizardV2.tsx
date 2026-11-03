@@ -172,7 +172,7 @@ export function ProfileWizardV2({ onClose, onSave, defaultGroup }: ProfileWizard
       return (
         <div className="flex flex-col items-center justify-center h-64">
           <Icon icon="solar:refresh-bold" className="w-12 h-12 text-white animate-spin mb-4" />
-          <p className="text-xl font-minecraft text-white lowercase">loading versions...</p>
+          <p className="text-xl font-minecraft text-white normal-case">loading versions...</p>
         </div>
       );
     }
@@ -229,7 +229,7 @@ export function ProfileWizardV2({ onClose, onSave, defaultGroup }: ProfileWizard
               onClick={() => setSelectedVersion(version.id)}
             >
               <div className="flex flex-col items-center text-center">
-                <h4 className="font-minecraft text-3xl text-white lowercase">
+                <h4 className="font-minecraft text-3xl text-white normal-case">
                   {version.id}
                 </h4>
                 <p className="text-xs text-white/60 font-minecraft-ten capitalize mt-1">
@@ -243,7 +243,7 @@ export function ProfileWizardV2({ onClose, onSave, defaultGroup }: ProfileWizard
         {filteredVersions.length === 0 && !loading && (
           <div className="col-span-3 text-center py-8">
             <Icon icon="solar:magnifer-bold" className="w-12 h-12 text-white/50 mx-auto mb-2" />
-            <p className="text-lg font-minecraft text-white/70 lowercase">{t("search.noResults")}</p>
+            <p className="text-lg font-minecraft text-white/70 normal-case">{t("search.noResults")}</p>
           </div>
         )}
       </div>
