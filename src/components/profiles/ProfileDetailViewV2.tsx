@@ -51,6 +51,16 @@ export function ProfileDetailViewV2({
   onClose,
   onEdit,
 }: ProfileDetailViewV2Props) {
+  const [horizonStatus, setHorizonStatus] = useState<{ version: string; channel: string; last_error?: string; installed: boolean } | null>(null);
+  useEffect(() => {
+    let active = true;
+    setHorizonStatus(null);
+    if (profile.loader !== "horizon") return;
+    const refresh = () => invoke<{ version: string; channel: string; last_error?: string; installed: boolean }>("get_horizon_runtime_status", { profile_id: profile.id }).then(status => { if (active) setHorizonStatus(status); }).catch(() => { if (active) setHorizonStatus(null); });
+    refresh();
+    const timer = window.setInterval(refresh, 10000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [profile.id, profile.loader]);
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [currentProfile, setCurrentProfile] = useState<Profile>(profile);
@@ -509,6 +519,11 @@ export function ProfileDetailViewV2({
                           )}
                         </div>
                       </>
+                    )}
+                    {profile.loader === "horizon" && (
+                      <span className="text-xs text-white/50" title={horizonStatus?.last_error ? `Se conserva el motor instalado: ${horizonStatus.last_error}` : `Motor: ${horizonStatus?.version || "se instalará al jugar"}. Comprueba actualizaciones al iniciar; conserva la instalación anterior si falla.`}>
+                        {horizonStatus?.last_error ? "Motor anterior conservado" : "Actualización automática"}
+                      </span>
                     )}
                     <PackVersionMeta packId={currentProfile.selected_pixelplay_pack_id} size="md" />
 
